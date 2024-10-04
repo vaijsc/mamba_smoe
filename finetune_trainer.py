@@ -12,10 +12,12 @@ def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
     """Single training step."""
     acc_num, acc_value = 0, 0.0
     out, h_cache = model(X, h_cache)
+    # print(model.module.layers[0].attn.proj_key.weight)
     out = out.view(-1, out.size(-1))
     # loss = torch.nn.functional.nll_loss(out, Y.view(-1))
     criterion = nn.CrossEntropyLoss()
     # pdb.set_trace()
+    # print(out, Y)
     loss = criterion(out, Y)
     loss_value = loss.item() / loss_div
     # loss = loss.float()
@@ -41,6 +43,7 @@ def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
             loss += load_balance * balance_loss
 
         (loss / loss_div).backward()
+        # print(torch.norm(model.module.layers[0].attn.proj_key.weight.grad))
     return loss_value, acc_num, acc_value, h_cache
 
 
@@ -117,15 +120,22 @@ def train_iteration(
     else:
         model.train()
 
+    # nb_batches_per_iter_max = nb_batches_per_iter
+    # if eval_only:
+    #     # eval on fewer batches during training for speed-up
+    #     nb_batches_per_iter_max = max(1, nb_batches_per_iter // 10)
+    #     for _temp, _, _ in data:
+    #         ch_block = _temp.size(1)  # data.size(1)
+    #         break
+    #     nb_batches_per_iter_max = min(
+    #         nb_batches_per_iter_max, math.ceil(ch_block / block_size)
+    #     )
     nb_batches_per_iter_max = nb_batches_per_iter
     if eval_only:
         # eval on fewer batches during training for speed-up
         nb_batches_per_iter_max = max(1, nb_batches_per_iter // 10)
-        for _temp, _, _ in data:
-            ch_block = _temp.size(1)  # data.size(1)
-            break
         nb_batches_per_iter_max = min(
-            nb_batches_per_iter_max, math.ceil(ch_block / block_size)
+            nb_batches_per_iter_max, math.ceil(data.n_step / block_size)
         )
 
     loss_all = 0
@@ -140,6 +150,7 @@ def train_iteration(
             1, 0
         ).contiguous()  # data[:, train_pos: train_pos + block_size].contiguous()
         Y = _target  # .permute(1,0) #.contiguous() #data[:, train_pos + 1: train_pos + block_size + 1].contiguous()
+        # print(Y)
 
         loss, tmp_len, tmp_acc, h_cache = _train_batch(
             model=model,
@@ -152,6 +163,7 @@ def train_iteration(
             eval_only=eval_only,
             batch_split=batch_split,
         )
+        # print(tmp_acc)
         loss_all += loss
         total_len += tmp_len
         total_acc += tmp_acc

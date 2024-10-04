@@ -131,6 +131,7 @@ def _get_optimizer(model, optim, lr: float, momentum: float, grad_clip: float):
         return torch.optim.Adam(
             _get_grad_requiring_params(model),
             lr=lr,
+            weight_decay=1e-5,
         )
     else:
         raise RuntimeError("wrong type of optimizer - must be 'sgd' or 'adam'")
@@ -171,6 +172,9 @@ def _load_checkpoint(checkpoint_path, model, optimizer, scheduler, logger, distr
     else:
         checkpoint_state = torch.load(checkpoint_path)
     iter_init = checkpoint_state["nb_batches_per_iter"] + 1  # next iteration
+    # del checkpoint_state["model"]["module.in_emb.weight"]
+    # del checkpoint_state["model"]["module.out_emb.weight"]
+    # del checkpoint_state["model"]["module.out_emb.bias"]
     model.load_state_dict(checkpoint_state["model"])
     optimizer.load_state_dict(checkpoint_state["optimizer"])
     if "scheduler_iter" in checkpoint_state:
@@ -180,6 +184,7 @@ def _load_checkpoint(checkpoint_path, model, optimizer, scheduler, logger, distr
 
 
 def load_checkpoint(checkpoint_path, model, optimizer, scheduler, logger, distributed, resume):
+    print(checkpoint_path)
     if resume and os.path.exists(checkpoint_path):
         return _load_checkpoint(
             checkpoint_path=checkpoint_path,

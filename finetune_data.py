@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from vocabulary import Vocab
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
+import pytreebank
 
 
 def pad_sequence_reverse(data):
@@ -99,6 +100,7 @@ class SST2Iterator(object):
         self.labels = data[1]  # Tensor
 
         self.n_step = self.labels.size(0) // bsz
+        self.cur_step = 0
         self.n_samples = self.labels.size(0)
         self.sequence_array = np.arange(self.n_samples)
 
@@ -134,9 +136,12 @@ class SST2Iterator(object):
             yield self.get_batch(sub_index)
 
     def get_fixlen_iter(self, start=0, std=5, min_len=5, max_deviation=3):
-        for i in range(self.n_step):
+        # print(self.n_step)
+        for i in range(self.cur_step, self.cur_step+(self.n_step//5)):
+        # for i in range(self.n_step):
             sub_index = self.sequence_array[i * self.bsz : i * self.bsz + self.bsz]
             yield self.get_batch(sub_index)
+        self.cur_step = i + 1
 
     def __iter__(self):
         return self.get_fixlen_iter()
@@ -299,8 +304,15 @@ class Corpus(object):
             self.vocab.count_sst2(os.path.join(path, "dev.tsv"), add_cls_token=True)
 
         elif self.dataset == "sst5":
-            self.vocab.count_sst5(os.path.join(path, "train.tsv"), add_cls_token=True)
-            self.vocab.count_sst5(os.path.join(path, "dev.tsv"), add_cls_token=True)
+            dataset = pytreebank.load_sst(path)
+            train = dataset['train']
+            val = dataset['dev']
+            test = dataset['test']
+            # self.vocab.count_sst5(os.path.join(path, "train.tsv"), add_cls_token=True)
+            # self.vocab.count_sst5(os.path.join(path, "dev.tsv"), add_cls_token=True)
+            self.vocab.count_sst5(train, add_cls_token=True)
+            self.vocab.count_sst5(val, add_cls_token=True)
+            
         elif self.dataset == "banking77":
             self.vocab.count_banking77(
                 os.path.join(path, "train.tsv"), add_cls_token=True
@@ -360,11 +372,14 @@ class Corpus(object):
 
         elif self.dataset == "sst5":
             self.train = self.vocab.encode_sst5_file(
-                os.path.join(path, "train.tsv"), add_cls_token=True
+                train, add_cls_token=True
             )
             self.valid = self.vocab.encode_sst5_file(
-                os.path.join(path, "dev.tsv"), add_cls_token=True
+                val, add_cls_token=True
             )
+            # self.test = self.vocab.encode_sst5_file(
+            #     test, add_cls_token=True
+            # )
         elif self.dataset == "banking77":
             self.train = self.vocab.encode_banking77_file(
                 os.path.join(path, "train.tsv"), add_cls_token=True
@@ -407,8 +422,8 @@ class Corpus(object):
 
 
 def get_lm_corpus(datadir, dataset):
-
     fn = os.path.join(datadir, "cache.pt")
+    # print(fn)
     if os.path.exists(fn):
         print("Loading cached dataset...")
         corpus = torch.load(fn)

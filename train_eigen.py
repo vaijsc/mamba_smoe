@@ -125,6 +125,10 @@ def launch(
     start_time = time.time()
     # eval model
     if trainer_params["full_eval_mode"]:
+        for i in range(0,6):
+            weight = model.module.layers[i].smoe.experts.htoh4.weight.cpu() @ model.module.layers[i].smoe.experts.h4toh.weight.cpu()
+            torch.save(weight, f'weight_mom_{i}.pt')
+        return
         # evaluate the model on test data
         with torch.no_grad():
             loss_val = full_eval(

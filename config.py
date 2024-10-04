@@ -17,6 +17,7 @@ PARAMS_CONFIG = {
         "--local_rank": {
             "type": int,
             "default": int(os.environ['LOCAL_RANK']),
+            # "default": 0,
             "help": "used in distributed training",
             "dest": "local_rank",
         },

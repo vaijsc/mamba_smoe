@@ -61,6 +61,37 @@ class SeqAttention(nn.Module):
             key, value, key_pe = self.adaptive_span.trim_memory(
                 query, key, value, key_pe
             )
+            
+        ############## RPC ###############
+        # B, M, H = query.shape
+        # mu = M*H/8/query.norm(p=1,dim=[-1,-2],keepdim=True)
+        # lambd = 2.0
+        # l = torch.zeros_like(query).to(torch.device("cuda"))
+        # y = torch.zeros_like(query).to(torch.device("cuda"))
+        # for i in range(0,1):
+        #     s = (query-l+y/(mu+1e-8)) 
+        #     s_less = s.le(-lambd/(mu+1e-8)).int()
+        #     s_more = s.ge(lambd/(mu+1e-8)).int()
+        #     s = (s-lambd/(mu+1e-8))*s_more + (s+lambd/(mu+1e-8))*s_less
+        #     query = query-s-y/(mu+1e-8)
+        #     # compute attention from context
+        #     # B x M (dest) x (M+L) (src)
+        #     # l = torch.matmul(query2, query2.transpose(-1, -2))
+        #     # print(l.shape)
+        #     # print(value.shape)
+        #     # l = _unskew(l)
+        #     # l = l / math.sqrt(self.hidden_size)  # B x M X L_pos
+        #     # l = F.softmax(l, dim=-1)
+        #     # l = torch.matmul(l, value)
+        #     # y = y+mu*(query2-l-s)
+        
+        # # s = (query-l+y/(mu+1e-8)) 
+        # # s_less = s.le(-lambd/(mu+1e-8)).int()
+        # # s_more = s.ge(lambd/(mu+1e-8)).int()
+        # # s = (s-lambd/(mu+1e-8))*s_more + (s+lambd/(mu+1e-8))*s_less
+        # # query = query-s-y/(mu+1e-8)
+
+        #################################
 
         # compute attention from context
         # B x M (dest) x (M+L) (src)
@@ -379,8 +410,8 @@ class TransformerSeq(nn.Module):
         self.key_pe = nn.Parameter(torch.randn(1, hidden_size // nb_heads, attn_span))
         # finetuning parts
         self.project_head = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
-            nn.Tanh(),
+            # nn.Linear(hidden_size, hidden_size),
+            # nn.Tanh(),
             nn.Dropout(0.1),
             nn.Linear(hidden_size, num_classes),
         )
@@ -477,6 +508,8 @@ class TransformerSeq(nn.Module):
             if layer.use_attn:
                 cache_size = layer.attn.attn.get_cache_size()
                 if cache_size > block_size:
+                    # print(h_cache[l][:, -cache_size + block_size :, :].shape)
+                    # print(h.shape)
                     h_cache_next_l = torch.cat(
                         [h_cache[l][:, -cache_size + block_size :, :], h], dim=1
                     ).detach()
@@ -487,8 +520,10 @@ class TransformerSeq(nn.Module):
             else:
                 h = layer(h, [], self.key_pe)
 
-        out = F.log_softmax(self.out_emb(h), dim=-1)
+        # out = F.log_softmax(self.out_emb(h), dim=-1)
         # project to custom data
         # pdb.set_trace()
+        out = self.out_emb(h)
         pre_logits = self.project_head(out[:, -1, :])
+        pre_logits = F.softmax(pre_logits, dim=-1)
         return pre_logits, h_cache_next

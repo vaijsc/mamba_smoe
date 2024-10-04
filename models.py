@@ -8,6 +8,7 @@ import tqdm
 
 from custom_transformer import FMoETransformerMLP, FMoETransformerMLPOpt
 from custom_gates import *
+import cmath
 
 
 # Size notations:
@@ -130,6 +131,46 @@ class MultiHeadSeqAttention(nn.Module):
         out = self.proj_out(out)
         return out
 
+class MultiHeadSeqSymAttention(nn.Module):
+    def __init__(self, hidden_size, nb_heads, **kargs):
+        nn.Module.__init__(self)
+        assert hidden_size % nb_heads == 0
+        self.nb_heads = nb_heads
+        self.head_dim = hidden_size // nb_heads
+        self.attn = SeqAttention(hidden_size=self.head_dim, nb_heads=nb_heads, **kargs)
+        # self.proj_query = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.proj_out = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.proj_val = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.proj_key = nn.Linear(hidden_size, hidden_size, bias=False)
+
+    def head_reshape(self, x):
+        K = self.nb_heads
+        D = self.head_dim
+        x = x.view(x.size()[:-1] + (K, D))  # B x (M+L) x K x D
+        x = x.transpose(1, 2).contiguous()  # B x K x (M+L) x D
+        x = x.view(-1, x.size(-2), x.size(-1))  # B_K x (M+L) x D
+        return x
+
+    def forward(self, query, key, value, key_pe):
+        B = query.size(0)
+        K = self.nb_heads
+        D = self.head_dim
+        M = query.size(1)
+
+        query = self.proj_key(query)
+        query = self.head_reshape(query)
+        value = self.proj_val(value)
+        value = self.head_reshape(value)
+        key = self.proj_key(key)
+        key = self.head_reshape(key)
+
+        out = self.attn(query, key, value, key_pe)  # B_K x M x D
+        out = out.view(B, K, M, D)  # B x K x M x D
+        out = out.transpose(1, 2).contiguous()  # B x M x K x D
+        out = out.view(B, M, -1)  # B x M x K_D
+        out = self.proj_out(out)
+        return out
+
 
 class FeedForwardLayer(nn.Module):
     def __init__(self, hidden_size, inner_hidden_size, dropout, **kargs):
@@ -187,6 +228,66 @@ class CustomizedMoEPositionwiseFF(FMoETransformerMLP):
 
         return output
     
+class CustomizedMoEPositionwiseFFComplexMoM(FMoETransformerMLP):
+    def __init__(
+        self,
+        gate,
+        hidden_size,
+        inner_hidden_size,
+        dropout,
+        pre_lnorm=False,
+        moe_num_expert=16,
+        moe_top_k=2,
+        gamma1=1.0,
+        gamma2=1.0,
+        mu=0.9,
+        beta1=0.9,
+        beta2=0.999,
+        layerth=0
+    ):
+        activation = nn.Sequential(nn.ReLU(), nn.Dropout(dropout))
+        super().__init__(
+            num_expert=moe_num_expert,
+            d_model=hidden_size,
+            d_hidden=inner_hidden_size,
+            moe_top_k=moe_top_k,
+            activation=activation,
+            gate=gate,
+        )
+        self.pre_lnorm = pre_lnorm
+        self.layer_norm = nn.LayerNorm(hidden_size)
+        self.dropout = nn.Dropout(dropout)
+        self.gamma1 = gamma1
+        self.gamma2= gamma2
+        self.mu = mu
+        # real part of complex number
+        self.beta1 = beta1
+        # complex part of complex number 
+        self.beta2 = beta2
+        self.layerth = layerth
+
+    def forward(self, inp, moment):
+        if self.pre_lnorm:
+            ##### layer normalization + positionwise feed-forward
+            core_out = super().forward(self.layer_norm(inp))
+            core_out = self.dropout(core_out)
+
+            ##### Momentum
+            moment = self.mu * moment + self.gamma2 * core_out
+            output = inp - moment
+
+        else:
+            ##### positionwise feed-forward
+            core_out = super().forward(inp)
+            core_out = self.dropout(core_out)
+            complex_beta = complex(self.beta1, self.beta2)
+
+            ##### Momentum
+            moment = complex_beta * moment + self.gamma2 * core_out
+            output = self.layer_norm(inp - torch.real(moment))
+
+        return output, moment
+
 class CustomizedMoEPositionwiseFFMoM(FMoETransformerMLP):
     def __init__(
         self,
@@ -489,6 +590,21 @@ class TransformerSeqLayer(nn.Module):
                     layerth=layerth,
                 )
                 if g is "a"
+                else 
+                CustomizedMoEPositionwiseFFComplexMoM(
+                    gate,
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                    gamma1=gamma1,
+                    gamma2=gamma2,
+                    mu=mu,
+                    beta1=beta1,
+                    beta2=beta2,
+                    layerth=layerth,
+                )
+                if g is "c"
                 else None
             )
 
@@ -506,7 +622,7 @@ class TransformerSeqLayer(nn.Module):
         self.norm3 = nn.LayerNorm(hidden_size)
 
         self.use_attn = s == "s"
-        self.use_smoe = g == "g" or g == "m" or g == "a"
+        self.use_smoe = g == "g" or g == "m" or g == "a" or g == "c"
         self.use_ff = f == "f"
         self.g = g
 
@@ -518,7 +634,7 @@ class TransformerSeqLayer(nn.Module):
             attn_out = self.attn(h, h_all, h_all, key_pe)
             h = self.norm1(h + attn_out)  # B x M x H
         if self.use_smoe:
-            if self.g == "m" or self.g == "a":
+            if self.g == "m" or self.g == "a" or self.g == "c":
                 smoe_out, moment = self.smoe(h, moment)
             elif self.g == "g":
                 smoe_out = self.smoe(h)
@@ -674,6 +790,8 @@ class TransformerSeq(nn.Module):
         h_cache_next = []
         if 'a' in self.arch:
             moment = (torch.zeros_like(h),torch.zeros_like(h),torch.zeros_like(h))
+        elif 'c' in self.arch:
+            moment = torch.complex(torch.zeros_like(h),torch.zeros_like(h))
         else:
             moment = torch.zeros_like(h)
         for l, layer in enumerate(self.layers):

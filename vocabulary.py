@@ -129,7 +129,7 @@ class Vocab(object):
             tsv_file = csv.reader(f, delimiter="\t")
             for line in tsv_file:
                 if not line[1] in ["0", "1"]:
-                    # print('* Ignore ', line)
+                    print('* Ignore ', line)
                     continue
                 sentence, label = line[0], int(line[1])
                 assert label in [0, 1]
@@ -145,32 +145,32 @@ class Vocab(object):
 
     def count_sst5(
         self,
-        path,
+        dataset,
         verbose=False,
         add_eos=False,
         add_double_eos=False,
         add_cls_token=False,
     ):
-        if verbose:
-            print("counting file {} ...".format(path))
-        assert os.path.exists(path)
+        # if verbose:
+        #     print("counting file {} ...".format(path))
+        # assert os.path.exists(path)
         sents = []
-        with open(path, "r", encoding="utf-8") as f:
-            tsv_file = csv.reader(f, delimiter="\t")
-            for line in tsv_file:
-                if not line[1] in ["0", "1", "2", "3", "4"]:
-                    # print('* Ignore ', line)
-                    continue
-                sentence, label = line[0], int(line[1])
-                assert label in [0, 1, 2, 3, 4]
-                sentence_toks = self.tokenize(
-                    sentence,
-                    add_eos=add_eos,
-                    add_double_eos=add_double_eos,
-                    add_cls_token=add_cls_token,
-                )
-                self.counter.update(sentence_toks)
-                sents.append(sentence_toks)
+        for sample in dataset:
+            # print("here:", sample)
+            sample = sample.to_labeled_lines()[0]
+            if not sample[0] in [0, 1, 2, 3, 4]:
+                print("* Ignore ", sample)
+                continue
+            sentence, label = sample[1], sample[0]
+            # assert label in [0, 1, 2, 3, 4]
+            sentence_toks = self.tokenize(
+                sentence,
+                add_eos=add_eos,
+                add_double_eos=add_double_eos,
+                add_cls_token=add_cls_token,
+            )
+            self.counter.update(sentence_toks)
+            sents.append(sentence_toks)
         return sents
 
     def count_banking77(
@@ -343,6 +343,7 @@ class Vocab(object):
             tsv_file = csv.reader(f, delimiter="\t")
             for line in tsv_file:
                 if not line[1] in ["0", "1"]:
+                    print(line[0])
                     print("* Ignore ", line)
                     continue
                 sentence, label = line[0], int(line[1])
@@ -361,33 +362,32 @@ class Vocab(object):
 
     def encode_sst5_file(
         self,
-        path,
+        dataset,
         verbose=False,
         add_eos=False,
         add_double_eos=False,
         add_cls_token=False,
     ):
-        if verbose:
-            print("encoding file {} ...".format(path))
-        assert os.path.exists(path)
+        # if verbose:
+        #     print("encoding file {} ...".format(path))
+        # assert os.path.exists(path)
         encoded = []
         labels = []
-        with open(path, "r", encoding="utf-8") as f:
-            tsv_file = csv.reader(f, delimiter="\t")
-            for line in tsv_file:
-                if not line[1] in ["0", "1", "2", "3", "4"]:
-                    print("* Ignore ", line)
-                    continue
-                sentence, label = line[0], int(line[1])
-                assert label in [0, 1, 2, 3, 4]
-                sentence_toks = self.tokenize(
-                    sentence,
-                    add_eos=add_eos,
-                    add_double_eos=add_double_eos,
-                    add_cls_token=add_cls_token,
-                )
-                encoded.append(self.convert_to_tensor(sentence_toks))
-                labels.append(label)
+        for sample in dataset:
+            sample = sample.to_labeled_lines()[0]
+            if not sample[0] in [0, 1, 2, 3, 4]:
+                print("* Ignore ", sample)
+                continue
+            sentence, label = sample[1], sample[0]
+            # assert label in [0, 1, 2, 3, 4]
+            sentence_toks = self.tokenize(
+                sentence,
+                add_eos=add_eos,
+                add_double_eos=add_double_eos,
+                add_cls_token=add_cls_token,
+            )
+            encoded.append(self.convert_to_tensor(sentence_toks))
+            labels.append(label)
 
         labels = torch.LongTensor(labels)
         return [encoded, labels]
