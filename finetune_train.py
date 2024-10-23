@@ -1,7 +1,6 @@
 import os, sys
 import warnings
-import tempfile
-from collections import OrderedDict
+
 warnings.filterwarnings("ignore")
 
 import argparse
@@ -15,7 +14,6 @@ from finetune_data import get_lm_corpus
 from finetune_models import TransformerSeq
 from finetune_trainer import train_iteration, full_eval
 import datetime
-import wandb
 from utils import (
     get_params,
     set_up_env,
@@ -34,22 +32,14 @@ def launch(
     adapt_span_params,
     optim_params,
     data_params,
-    trainer_params,    
-    wandb_params,
+    trainer_params,
 ):
-    wandb_flag = wandb_params["wandb_flag"]
-    if wandb_flag:
-        os.environ["WANDB_API_KEY"] = "f9b91afe90c0f06aa89d2a428bd46dac42640bff"
-        wandb.init(project=wandb_params["project_name"])
-        wandb.run.name = wandb_params["job_name"]
-        wandb.config.update(model_params)
     # global val
     best_val_loss = None
     # ENVIRONMENT (device, distributed, etc.)
     set_up_env(env_params)
     device = env_params["device"]
     distributed = env_params["distributed"]
-    resume = trainer_params["resume"]
 
     if distributed == False or env_params["rank"] == 0:
         print("data_params:\t", data_params)
@@ -69,7 +59,7 @@ def launch(
     elif data_params["data_name"] == "banking77":
         num_classes = 77
 
-    eval_batch_size = trainer_params["batch_size"]
+    eval_batch_size = 10
     train_data = corpus.get_iterator("train", trainer_params["batch_size"])
     val_data = corpus.get_iterator("valid", eval_batch_size)
     test_data = val_data  # corpus.get_iterator('test', eval_batch_size)
@@ -89,12 +79,12 @@ def launch(
             model,
             device_ids=[local_rank],
             output_device=local_rank,
-            # find_unused_parameters=True,
+            find_unused_parameters=True,
         )
     else:
         model = torch.nn.DataParallel(model)
         model = model.to(device)
-        
+
     # OPTIMIZER AND SCHEDULER
     optimizer, scheduler = get_optimizer_and_scheduler(
         model=model, optim_params=optim_params
@@ -125,65 +115,37 @@ def launch(
         )
     )
     logging("=" * 100)
-    iter_init = 0
+
     # Load the best saved model.
     if not trainer_params["full_eval_mode"]:
-        # with open(trainer_params["pretrained_weight"], "rb") as f:
-        pretrained_model = torch.load(trainer_params["pretrained_weight"], map_location='cpu')
-            # pretrained_model = torch.load(f)
+        with open(trainer_params["pretrained_weight"], "rb") as f:
+            pretrained_model = torch.load(f)
         # pdb.set_trace()
-        # print(pretrained_model["model"].keys())
-        # print(model.state_dict().keys())
         pretrained_model_checkpoint = pretrained_model["model"]  # .state_dict()
         filtered_checkpoint = {}
-        model_state_dict = model.state_dict()
         for key in pretrained_model_checkpoint.keys():
-            if key not in model_state_dict:
+            if not key in model.state_dict():
                 logging("Can not load {}".format(key))
             elif (
                 not pretrained_model_checkpoint[key].shape
-                == model_state_dict[key].shape
+                == model.state_dict()[key].shape
             ):
-                logging("Can not load {}, shape do not match. Expected {}, got {}".format(key, pretrained_model_checkpoint[key].shape, model_state_dict[key].shape))
+                logging("Can not load {}, shape do not match".format(key))
             else:
                 filtered_checkpoint[key] = pretrained_model_checkpoint[key]
-        for key in model_state_dict.keys():
-            if key not in filtered_checkpoint:
-                filtered_checkpoint[key] = model_state_dict[key]
-        # print(filtered_checkpoint.keys())
-        model.load_state_dict(filtered_checkpoint)
+
+        model.load_state_dict(filtered_checkpoint, strict=False)
         iter_init = 0
-        # print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     else:
         # resume training from last checkpoint if exists
         iter_init = load_checkpoint(
-            trainer_params["pretrained_weight"],
+            trainer_params["checkpoint_path"],
             model,
             optimizer,
             scheduler,
             logger,
             distributed,
-            resume,
         )
-        print(list(model.parameters()))
-    
-    # # OPTIMIZER AND SCHEDULER
-    # optimizer, scheduler = get_optimizer_and_scheduler(
-    #     model=model, optim_params=optim_params
-    # )
-    
-    # if distributed:
-    #     local_rank = env_params["local_rank"]
-    #     model = model.to(device)
-    #     model = torch.nn.parallel.DistributedDataParallel(
-    #         model,
-    #         device_ids=[local_rank],
-    #         output_device=local_rank,
-    #         find_unused_parameters=True,
-    #     )
-    # else:
-    #     model = torch.nn.DataParallel(model)
-    #     model = model.to(device)
 
     # fix gate
     if model_params["smoe_dropout"]:
@@ -291,8 +253,6 @@ def launch(
         )
         logging(msg_result)
         # Save the model if the validation loss is the best we've seen so far.
-        if wandb_flag:
-            wandb.log({'train_Acc':acc_train,'Epoch':iter_no,'test_Acc':acc_val})
         if (best_val_loss is None) or loss_val < best_val_loss:
             best_val_loss = loss_val
             save_checkpoint(
@@ -310,7 +270,3 @@ def launch(
 
 if __name__ == "__main__":
     launch(**get_params(params_config=PARAMS_CONFIG))
-
-
-
-

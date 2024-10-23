@@ -1,4 +1,3 @@
-
 mkdir -p /path/to/checkpoint/directory/
 
 args="

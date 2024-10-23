@@ -1,4 +1,6 @@
 ## MomentumSMoE: Integrating Momentum into Sparse Mixture of Experts
+MomentumSMoE: Integrating Momentum into Sparse Mixture of Experts
+https://arxiv.org/abs/2410.14574
 
 ### Prerequisites
 

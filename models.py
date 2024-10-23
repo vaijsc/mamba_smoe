@@ -227,66 +227,6 @@ class CustomizedMoEPositionwiseFF(FMoETransformerMLP):
             output = self.layer_norm(inp + core_out)
 
         return output
-    
-class CustomizedMoEPositionwiseFFComplexMoM(FMoETransformerMLP):
-    def __init__(
-        self,
-        gate,
-        hidden_size,
-        inner_hidden_size,
-        dropout,
-        pre_lnorm=False,
-        moe_num_expert=16,
-        moe_top_k=2,
-        gamma1=1.0,
-        gamma2=1.0,
-        mu=0.9,
-        beta1=0.9,
-        beta2=0.999,
-        layerth=0
-    ):
-        activation = nn.Sequential(nn.ReLU(), nn.Dropout(dropout))
-        super().__init__(
-            num_expert=moe_num_expert,
-            d_model=hidden_size,
-            d_hidden=inner_hidden_size,
-            moe_top_k=moe_top_k,
-            activation=activation,
-            gate=gate,
-        )
-        self.pre_lnorm = pre_lnorm
-        self.layer_norm = nn.LayerNorm(hidden_size)
-        self.dropout = nn.Dropout(dropout)
-        self.gamma1 = gamma1
-        self.gamma2= gamma2
-        self.mu = mu
-        # real part of complex number
-        self.beta1 = beta1
-        # complex part of complex number 
-        self.beta2 = beta2
-        self.layerth = layerth
-
-    def forward(self, inp, moment):
-        if self.pre_lnorm:
-            ##### layer normalization + positionwise feed-forward
-            core_out = super().forward(self.layer_norm(inp))
-            core_out = self.dropout(core_out)
-
-            ##### Momentum
-            moment = self.mu * moment + self.gamma2 * core_out
-            output = inp - moment
-
-        else:
-            ##### positionwise feed-forward
-            core_out = super().forward(inp)
-            core_out = self.dropout(core_out)
-            complex_beta = complex(self.beta1, self.beta2)
-
-            ##### Momentum
-            moment = complex_beta * moment + self.gamma2 * core_out
-            output = self.layer_norm(inp - torch.real(moment))
-
-        return output, moment
 
 class CustomizedMoEPositionwiseFFMoM(FMoETransformerMLP):
     def __init__(
@@ -590,21 +530,6 @@ class TransformerSeqLayer(nn.Module):
                     layerth=layerth,
                 )
                 if g is "a"
-                else 
-                CustomizedMoEPositionwiseFFComplexMoM(
-                    gate,
-                    hidden_size=hidden_size,
-                    inner_hidden_size=inner_hidden_size,
-                    dropout=dropout,
-                    moe_top_k=moe_top_k,
-                    gamma1=gamma1,
-                    gamma2=gamma2,
-                    mu=mu,
-                    beta1=beta1,
-                    beta2=beta2,
-                    layerth=layerth,
-                )
-                if g is "c"
                 else None
             )
 
@@ -622,7 +547,7 @@ class TransformerSeqLayer(nn.Module):
         self.norm3 = nn.LayerNorm(hidden_size)
 
         self.use_attn = s == "s"
-        self.use_smoe = g == "g" or g == "m" or g == "a" or g == "c"
+        self.use_smoe = g == "g" or g == "m" or g == "a"
         self.use_ff = f == "f"
         self.g = g
 
@@ -634,7 +559,7 @@ class TransformerSeqLayer(nn.Module):
             attn_out = self.attn(h, h_all, h_all, key_pe)
             h = self.norm1(h + attn_out)  # B x M x H
         if self.use_smoe:
-            if self.g == "m" or self.g == "a" or self.g == "c":
+            if self.g == "m" or self.g == "a":
                 smoe_out, moment = self.smoe(h, moment)
             elif self.g == "g":
                 smoe_out = self.smoe(h)
@@ -790,8 +715,6 @@ class TransformerSeq(nn.Module):
         h_cache_next = []
         if 'a' in self.arch:
             moment = (torch.zeros_like(h),torch.zeros_like(h),torch.zeros_like(h))
-        elif 'c' in self.arch:
-            moment = torch.complex(torch.zeros_like(h),torch.zeros_like(h))
         else:
             moment = torch.zeros_like(h)
         for l, layer in enumerate(self.layers):

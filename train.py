@@ -39,7 +39,6 @@ def launch(
 ):
     wandb_flag = wandb_params["wandb_flag"]
     if wandb_flag:
-        os.environ["WANDB_API_KEY"] = "f9b91afe90c0f06aa89d2a428bd46dac42640bff"
         wandb.init(project=wandb_params["project_name"])
         wandb.run.name = wandb_params["job_name"]
         wandb.config.update(model_params)
@@ -252,7 +251,7 @@ def launch(
         logging(msg_result)
         if wandb_flag:
             wandb.log({'train_ppl':float(math.exp(loss_train)),'Epoch':iter_no,'valid_ppl':float(math.exp(loss_val))})
-        # logger.log_iter(iter_no, nb_batches_per_iter, loss_train, loss_val, elapsed, model)
+        logger.log_iter(iter_no, nb_batches_per_iter, loss_train, loss_val, elapsed, model)
         # Save the model if the validation loss is the best we've seen so far.
         if (best_val_loss is None) or loss_val < best_val_loss:
             best_val_loss = loss_val
