@@ -92,14 +92,17 @@ def launch(
 
     # create logger
     logger = Logger()
-    fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
-    folder_path = "/".join(trainer_params["checkpoint_path"].split("/")[:-1])
-    logging = create_exp_dir(f"{folder_path}/experiments/{fold_name}")
-    # log paramters
-    logging(f"Training Parameters:\n {trainer_params}")
-    logging(f"Models Parameters:\n {model_params}")
-    # logging time
-    current_time = datetime.datetime.now()
+    #import ipdb; ipdb.set_trace()
+    eval=False
+    if eval:
+        fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
+        folder_path = "/".join(trainer_params["checkpoint_path"].split("/")[:-1])
+        logging = create_exp_dir(f"{folder_path}/experiments/{fold_name}")
+        # log paramters
+        logging(f"Training Parameters:\n {trainer_params}")
+        logging(f"Models Parameters:\n {model_params}")
+        # logging time
+        current_time = datetime.datetime.now()
     logging(str(current_time))
     # log model
     logging(str(model))
