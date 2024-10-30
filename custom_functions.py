@@ -46,7 +46,8 @@ def count_by_gate(gate, num_expert, world_size, require_pos=True):
             lec_cum = torch.cumsum(local_expert_count, dim=0).int()
             pos_size = lec_cum[-1].item()
             pos = torch.empty((pos_size,), device=gate.device, dtype=torch.long)
-            fmoe_cuda.assign_pos(lec_cum, gate, pos)
+            fmoe_cuda._assign_pos(lec_cum, gate, pos)
+            # fmoe_cuda.assign_pos(lec_cum, gate, pos)
 
     return pos, local_expert_count, global_expert_count
 
