@@ -92,6 +92,8 @@ def launch(
 
     # create logger
     logger = Logger()
+    folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    logging = create_exp_dir(f"{folder_path}")
     #import ipdb; ipdb.set_trace()
     eval=False
     if eval:
@@ -103,69 +105,67 @@ def launch(
         logging(f"Models Parameters:\n {model_params}")
         # logging time
         current_time = datetime.datetime.now()
-    logging(str(current_time))
-    # log model
-    logging(str(model))
-    logging(f"Total of Parameters: {sum(p.numel() for p in model.parameters())}")
-    logging(
-        f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
-    )
-    # resume training from last checkpoint if exists
-    iter_init = load_checkpoint(
-        trainer_params["checkpoint_path"],
-        model,
-        optimizer,
-        scheduler,
-        logger,
-        distributed,
-        resume,
-    )
+        logging(str(current_time))
+        # log model
+        logging(str(model))
+        logging(f"Total of Parameters: {sum(p.numel() for p in model.parameters())}")
+        logging(
+            f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
+        )
+        # resume training from last checkpoint if exists
+        iter_init = load_checkpoint(
+            trainer_params["checkpoint_path"],
+            model,
+            optimizer,
+            scheduler,
+            logger,
+            distributed,
+            resume,
+        )
+        
+        # eval model
+        if trainer_params["full_eval_mode"]:
+            # evaluate the model on test data
+            with torch.no_grad():
+                loss_val = full_eval(
+                    model,
+                    optimizer,
+                    scheduler,
+                    val_data,
+                    model_params["block_size"],
+                    model_params["hidden_size"],
+                )
+                loss_test = full_eval(
+                    model,
+                    optimizer,
+                    scheduler,
+                    test_data,
+                    model_params["block_size"],
+                    model_params["hidden_size"],
+                )
+                if distributed:
+                    # collect results into rank0
+                    stats = torch.tensor([loss_val, loss_test]).to(device)
+                    torch.distributed.reduce(stats, 0)
+                    if env_params["rank"] == 0:
+                        loss_val = stats[0] / env_params["world_size"]
+                        loss_test = stats[1] / env_params["world_size"]
+                    else:
+                        return
+
+                # print('Test BPC: {:.4f}'.format(loss_test / math.log(2)))
+                if ("enwik8" in data_params["data_path"]) or (
+                    "text8" in data_params["data_path"]
+                ):
+                    logging("Val: {:.3f} BPC".format(loss_val / math.log(2)))
+                    logging("Test: {:.3f} BPC".format(loss_test / math.log(2)))
+                else:
+                    logging("Val: {:.3f} PPL".format(math.exp(loss_val)))
+                    logging("Test: {:.3f} PPL".format(math.exp(loss_test)))
+            return
     # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)
-    # calculate time
-    start_time = time.time()
-    # eval model
-    if trainer_params["full_eval_mode"]:
-        # evaluate the model on test data
-        with torch.no_grad():
-            loss_val = full_eval(
-                model,
-                optimizer,
-                scheduler,
-                val_data,
-                model_params["block_size"],
-                model_params["hidden_size"],
-            )
-            loss_test = full_eval(
-                model,
-                optimizer,
-                scheduler,
-                test_data,
-                model_params["block_size"],
-                model_params["hidden_size"],
-            )
-            if distributed:
-                # collect results into rank0
-                stats = torch.tensor([loss_val, loss_test]).to(device)
-                torch.distributed.reduce(stats, 0)
-                if env_params["rank"] == 0:
-                    loss_val = stats[0] / env_params["world_size"]
-                    loss_test = stats[1] / env_params["world_size"]
-                else:
-                    return
-
-            # print('Test BPC: {:.4f}'.format(loss_test / math.log(2)))
-            if ("enwik8" in data_params["data_path"]) or (
-                "text8" in data_params["data_path"]
-            ):
-                logging("Val: {:.3f} BPC".format(loss_val / math.log(2)))
-                logging("Test: {:.3f} BPC".format(loss_test / math.log(2)))
-            else:
-                logging("Val: {:.3f} PPL".format(math.exp(loss_val)))
-                logging("Test: {:.3f} PPL".format(math.exp(loss_test)))
-        return
-
     # position of current batch
     data_pos = [0] * 2
     # initialize caches for train and valid
@@ -180,7 +180,8 @@ def launch(
         ]
         for _ in range(2)
     ]
-
+    # calculate time
+    start_time = time.time()
     nb_batches_per_iter = trainer_params["nb_batches_per_iter"]
     for iter_no in range(iter_init, trainer_params["nb_iter"]):
         # freq type
