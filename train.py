@@ -183,7 +183,9 @@ def launch(
     # calculate time
     start_time = time.time()
     nb_batches_per_iter = trainer_params["nb_batches_per_iter"]
-    for iter_no in range(iter_init, trainer_params["nb_iter"]):
+    print('trainer_params["nb_iter"]: ', trainer_params["nb_iter"])
+    import ipdb; ipdb.set_trace()
+    for iter_no in range(0, trainer_params["nb_iter"]):
         # freq type
         if model_params["freq_type"] == "function":
             _threshold = 2.0 / (2.0 + math.sqrt((iter_no + 1)))
