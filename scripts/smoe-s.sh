@@ -1,7 +1,7 @@
-mkdir -p /path/to/checkpoint/directory/
+#mkdir -p /path/to/checkpoint/directory/
 
 args="
---data /path/to/data/directory/wikitext-103/ \
+--data /home/anhnd81/.cache/wikitext-103/ \
 --base_arch transformer \
 --architecture sgsgsg \
 --gate_name smoe \
@@ -21,11 +21,11 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /path/to/checkpoint/directory/smoe.pt \
 "
-
+#--checkpoint /path/to/checkpoint/directory/smoe.pt \
 echo "Training ..."
-CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10013 --nproc_per_node=4 --use_env train.py $args
+#CUDA_VISIBLE_DEVICES='0,1,2,3'
+python -m torch.distributed.launch --master_port 10013 --nproc_per_node=1 --use_env train.py $args
 
-echo "Evaluation ..."
-CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10013 --nproc_per_node=4 --use_env train.py $args --resume --full-eval-mode
+#echo "Evaluation ..."
+#CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10013 --nproc_per_node=4 --use_env train.py $args --resume --full-eval-mode
