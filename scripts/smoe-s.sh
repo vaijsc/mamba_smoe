@@ -1,4 +1,4 @@
-#mkdir -p /path/to/checkpoint/directory/
+mkdir -p /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints
 
 args="
 --data /home/anhnd81/.cache/wikitext-103/ \
@@ -21,6 +21,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/smoe.pt
 "
 #--checkpoint /path/to/checkpoint/directory/smoe.pt \
 echo "Training ..."
