@@ -22,16 +22,11 @@ def get_moe_group():
 
 def count_by_gate(gate, num_expert, world_size, require_pos=True):
     with torch.no_grad():
-        gate = gate.int()  # Converts gate tensor to Int if it’s not already
-        local_expert_count = num_expert * world_size  # Pass this as an integer to expert_count
-        
-        # Call fmoe_cuda.expert_count with the integer count
-        fmoe_cuda.expert_count(gate, local_expert_count)
-        
-        # Re-create local_expert_count as a tensor if it's needed afterward
         local_expert_count = torch.zeros(
             num_expert * world_size, device=gate.device, dtype=torch.int32
         )
+        fmoe_cuda.expert_count(gate, local_expert_count)
+        local_expert_count = local_expert_count.long()
 
         if world_size > 1:
             global_expert_count = fmoe_cuda.expert_exchange(
@@ -39,16 +34,13 @@ def count_by_gate(gate, num_expert, world_size, require_pos=True):
             )
         else:
             global_expert_count = local_expert_count
-
         if not require_pos:
             pos = None
         else:
             lec_cum = torch.cumsum(local_expert_count, dim=0).int()
             pos_size = lec_cum[-1].item()
             pos = torch.empty((pos_size,), device=gate.device, dtype=torch.long)
-            fmoe_cuda._assign_pos(lec_cum, gate, pos)
-            # fmoe_cuda.assign_pos(lec_cum, gate, pos)
-
+            fmoe_cuda.assign_pos(lec_cum, gate, pos)
     return pos, local_expert_count, global_expert_count
 
 

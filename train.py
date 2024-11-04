@@ -92,7 +92,8 @@ def launch(
 
     # create logger
     logger = Logger()
-    folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
     #import ipdb; ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
