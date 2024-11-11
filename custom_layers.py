@@ -35,6 +35,7 @@ def _fmoe_general_global_forward(
     Intermediate results like expert counts are hidden from users by this
     function.
     """
+    import ipdb; ipdb.set_trace()
     (
         pos,
         local_expert_count,
@@ -152,6 +153,7 @@ class FMoE(nn.Module):
         self.moe_group = moe_group
 
     def expert_fn(self, inp, fwd_expert_count):
+        import ipdb; ipdb.set_trace()
         r"""
         The default expert function which either calls the experts as a whole
         or as separate experts.
@@ -170,6 +172,7 @@ class FMoE(nn.Module):
         return torch.cat(outputs, dim=0)
 
     def mark_parallel_comm(self, expert_dp_comm="none"):
+        import ipdb; ipdb.set_trace()
         r"""
         Automatically mark the data parallel comms of the parameters within the
         module. This can be typically called at the end of the __init__ function
@@ -185,6 +188,7 @@ class FMoE(nn.Module):
         mark_module_parallel_comm(self.gate, "gate")
 
     def forward(self, moe_inp):
+        import ipdb; ipdb.set_trace()
         r"""
         The FMoE module first computes gate output, and then conduct MoE forward
         according to the gate.  The score of the selected gate given by the
@@ -369,6 +373,7 @@ class FMoELinear(nn.Module):
         r"""
         Call MOE function
         """
+        import ipdb; ipdb.set_trace()
         x = MOELinear.apply(inp, fwd_expert_count, self.weight, self.bias)
         return x
 

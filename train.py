@@ -86,6 +86,7 @@ def launch(
         model = model.to(device)
 
     # OPTIMIZER AND SCHEDULER
+    # import ipdb; ipdb.set_trace()
     optimizer, scheduler = get_optimizer_and_scheduler(
         model=model, optim_params=optim_params
     )
@@ -93,7 +94,7 @@ def launch(
     # create logger
     logger = Logger()
     # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/logging.txt'
+    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     logging = create_exp_dir(f"{folder_path}")
     #import ipdb; ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
@@ -171,17 +172,17 @@ def launch(
     hid_cache = [
         [
             torch.zeros(
-                train_data.size(0),
-                model.module.layers[layer_i].attn.attn.get_cache_size(),
-                model_params["hidden_size"],
-            ).to(device)
-            for layer_i in range(model.module.attn_layer_count)
+                train_data.size(0), # 32
+                model.module.layers[layer_i].attn.attn.get_cache_size(), # 256
+                model_params["hidden_size"], # 128
+            ).to(device) # torch.Size([32, 256, 128]) [smoe - bs 32]
+            for layer_i in range(model.module.attn_layer_count) # model.module.attn_layer_count = 3 [smoe]
         ]
         for _ in range(2)
     ]
     # calculate time
     start_time = time.time()
-    nb_batches_per_iter = trainer_params["nb_batches_per_iter"]
+    nb_batches_per_iter = trainer_params["nb_batches_per_iter"] # 1000
     # print('trainer_params["nb_iter"]: ', trainer_params["nb_iter"])
     # import ipdb; ipdb.set_trace()
     for iter_no in range(0, trainer_params["nb_iter"]): # 60 

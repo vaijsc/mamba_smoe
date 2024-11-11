@@ -32,7 +32,7 @@ PARAMS_CONFIG = {
         },
         "--data_name": {
             "type": str,
-            "default": "text8",
+            "default": "wikitext-103", # change name of dataset if neccesary
             "help": "The name of dataset",
             "dest": "data_name",
         },
@@ -156,7 +156,7 @@ PARAMS_CONFIG = {
         "--opt_blance": {
             "action": "store_true",
             "default": False,
-            "help": "Activate blancing for optimal router",
+            "help": "Activate balancing for optimal router",
             "dest": "opt_blance",
         },
         "--combine_gate": {

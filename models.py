@@ -180,6 +180,7 @@ class FeedForwardLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, h):
+        import ipdb; ipdb.set_trace()
         h1 = F.relu(self.fc1(h))
         h1 = self.dropout(h1)
         h2 = self.fc2(h1)
@@ -211,7 +212,8 @@ class CustomizedMoEPositionwiseFF(FMoETransformerMLP):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, inp):
-        if self.pre_lnorm:
+        import ipdb; ipdb.set_trace()
+        if self.pre_lnorm: # False [andnd81 reproduce]
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
             core_out = self.dropout(core_out)
@@ -552,6 +554,7 @@ class TransformerSeqLayer(nn.Module):
         self.g = g
 
     def forward(self, h, h_cache, moment, key_pe):
+        import ipdb; ipdb.set_trace()
         # h = B x M x H
         # h_cache = B x L x H
         if self.use_attn:
@@ -601,14 +604,15 @@ class TransformerSeq(nn.Module):
     ):
         nn.Module.__init__(self)
         # token embeddings
-        self.in_emb = nn.Embedding(vocab_size, hidden_size)
-        self.out_emb = nn.Linear(hidden_size, vocab_size)
+        self.in_emb = nn.Embedding(vocab_size, hidden_size) # Embedding(267735, 128)
+        self.out_emb = nn.Linear(hidden_size, vocab_size) 
         # position embeddings
-        self.key_pe = nn.Parameter(torch.randn(1, hidden_size // nb_heads, attn_span))
+        self.key_pe = nn.Parameter(torch.randn(1, hidden_size // nb_heads, attn_span)) # torch.Size([1, 16, 256])
         self.arch = architecture
 
         arch = architecture
-        print(arch)
+        # import ipdb; ipdb.set_trace()
+        # print(arch)
         self.attn_layer_count = arch.count("s")
         self.layers = nn.ModuleList()
         if base_arch == "transformer":
@@ -709,9 +713,10 @@ class TransformerSeq(nn.Module):
             )
 
     def forward(self, x, h_cache):
-        # x size = B x M
+        import ipdb; ipdb.set_trace()
+        # x size = B x M, e.g. [16 x 256]
         block_size = x.size(1)
-        h = self.in_emb(x)  # B x M x H
+        h = self.in_emb(x)  # B x M x H # embedding each token into 128 dimension
         h_cache_next = []
         if 'a' in self.arch:
             moment = (torch.zeros_like(h),torch.zeros_like(h),torch.zeros_like(h))
@@ -719,7 +724,7 @@ class TransformerSeq(nn.Module):
             moment = torch.zeros_like(h)
         for l, layer in enumerate(self.layers):
             if layer.use_attn:
-                cache_size = layer.attn.attn.get_cache_size()
+                cache_size = layer.attn.attn.get_cache_size() # 256
                 if cache_size > block_size:
                     h_cache_next_l = torch.cat(
                         [h_cache[l][:, -cache_size + block_size :, :], h], dim=1

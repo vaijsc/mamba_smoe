@@ -9,7 +9,7 @@ from custom_gates import *
 
 def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
     """Single training step."""
-
+    import ipdb; ipdb.set_trace()
     out, h_cache = model(X, h_cache)
     out = out.view(-1, out.size(-1))
     loss = torch.nn.functional.nll_loss(out, Y.view(-1))
@@ -31,7 +31,7 @@ def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
                 ):
                     if m.loss is not None:
                         balance_loss += m.loss
-            loss += load_balance * balance_loss
+            loss += load_balance * balance_loss # load balancing 
         (loss / loss_div).backward(retain_graph=True)
     return loss_value, h_cache
 
@@ -40,7 +40,7 @@ def _train_batch(
     model, load_balance, optimizer, scheduler, X, Y, h_cache, eval_only, batch_split
 ):
     """Train on a batch."""
-
+    import ipdb; ipdb.set_trace()
     optimizer.zero_grad()
 
     if batch_split == 1:
@@ -52,6 +52,7 @@ def _train_batch(
         split_size = X.size(0) // batch_split
         loss_value = 0
         h_cache_list = []
+        
         for split_ind in range(batch_split):
             split_slice = slice(split_ind * split_size, (split_ind + 1) * split_size)
             split_h_cache = [h[split_slice, :, :] for h in h_cache]
@@ -73,7 +74,7 @@ def _train_batch(
     if not eval_only:
         if scheduler is not None:
             scheduler.step()
-        optimizer.step()
+        optimizer.step() # after finish batch_split
 
         # make sure span parameters are in a correct range
         if model.module.layers[0].attn.attn.adapt_span_enabled:
