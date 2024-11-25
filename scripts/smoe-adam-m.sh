@@ -28,7 +28,7 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 80 \
---batch-sz 48 \
+--batch-sz 16 \
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
