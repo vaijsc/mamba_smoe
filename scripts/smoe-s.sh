@@ -21,7 +21,7 @@ echo $CUDA_VISIBLE_DEVICES
 # mkdir -p /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints
 
 args="
---data /home/anhnd81/.cache/wikitext-103/ \
+--data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/ \
 --base_arch transformer \
 --architecture sgsgsg \
 --gate_name smoe \
