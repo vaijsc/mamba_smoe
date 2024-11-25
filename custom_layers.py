@@ -13,7 +13,7 @@ from fastermoe.config import switch_from_env
 
 
 def mark_module_parallel_comm(module, comm):
-    # import ipdb; ipdb.set_trace()
+    # # import ipdb ipdb.set_trace()
     r"""
     Mark all parameters in `module` as doing data parallel in `comm`, where
     `comm` may be one of `'world', 'dp', 'none'`.
@@ -36,7 +36,7 @@ def _fmoe_general_global_forward(
     Intermediate results like expert counts are hidden from users by this
     function.
     """
-    # import ipdb; ipdb.set_trace()
+    # # import ipdb ipdb.set_trace()
     (
         pos,
         local_expert_count,
@@ -60,7 +60,7 @@ def _fmoe_general_global_forward(
         )
 
     x = tree.map_structure(scatter_func, inp)
-    import ipdb; ipdb.set_trace()
+    # import ipdb ipdb.set_trace()
     # x.shape torch.Size([16384, 128])
     # fwd_expert_count torch.Size([16]) 
     # tensor([1101, 1544, 1141,  725,  483, 1337,  787,  868, 1427, 1304, 1118,  904,
@@ -177,7 +177,7 @@ class FMoE(nn.Module):
         self.moe_group = moe_group
 
     def expert_fn(self, inp, fwd_expert_count):
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         r"""
         The default expert function which either calls the experts as a whole
         or as separate experts.
@@ -196,7 +196,7 @@ class FMoE(nn.Module):
         return torch.cat(outputs, dim=0)
 
     def mark_parallel_comm(self, expert_dp_comm="none"):
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         r"""
         Automatically mark the data parallel comms of the parameters within the
         module. This can be typically called at the end of the __init__ function
@@ -212,7 +212,7 @@ class FMoE(nn.Module):
         mark_module_parallel_comm(self.gate, "gate")
 
     def forward(self, moe_inp):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         r"""
         The FMoE module first computes gate output, and then conduct MoE forward
         according to the gate.  The score of the selected gate given by the
@@ -347,7 +347,7 @@ class MOELinear(Function):
         global_output_buf = fmoe_cuda.linear_forward(
             global_input_buf, fwd_expert_count, weight, bias
         )
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         variables = (global_input_buf, fwd_expert_count, weight, bias)
         ctx.save_for_backward(*variables)
         return global_output_buf
@@ -358,7 +358,7 @@ class MOELinear(Function):
         grad_inp_buf, grad_weight, grad_bias = fmoe_cuda.linear_backward(
             grad_out, input_buf, fwd_expert_count, weight, bias
         )
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         if not torch.is_tensor(bias):
             grad_bias = None
 
@@ -398,12 +398,12 @@ class FMoELinear(nn.Module):
         r"""
         Call MOE function
         """
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         x = MOELinear.apply(inp, fwd_expert_count, self.weight, self.bias)
         return x
 
     def extra_repr(self) -> str:
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         return "num_expert={}, in_features={}, \
         out_features={}, bias={}, rank={}".format(
             self.num_expert,
@@ -417,6 +417,6 @@ class FMoELinear(nn.Module):
         # Approach is the same as in torch.nn.Linear
         # https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/linear.py#L88
         # bias is left to zero, similar as megatron
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         # smoe: FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
         torch.nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))

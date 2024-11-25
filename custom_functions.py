@@ -10,7 +10,7 @@ _moe_group = None
 
 
 def ensure_comm(t, comm):
-    import ipdb; ipdb.set_trace()
+    # import ipdb ipdb.set_trace()
     if comm is None:
         comm = get_torch_default_comm()
     global _moe_group
@@ -19,11 +19,11 @@ def ensure_comm(t, comm):
 
 
 def get_moe_group():
-    import ipdb; ipdb.set_trace()
+    # import ipdb ipdb.set_trace()
     return _moe_group
 
 def count_by_gate(gate, num_expert, world_size, require_pos=True):
-    import ipdb; ipdb.set_trace()
+    # import ipdb ipdb.set_trace()
     with torch.no_grad():
         local_expert_count = torch.zeros(
             num_expert * world_size, device=gate.device, dtype=torch.int32
@@ -59,7 +59,7 @@ def prepare_forward(gate, num_expert, world_size):
         world_size: number of workers that hold different experts.
         comm: the communicator of all workers in the expert-parallel group.
     """
-    # import ipdb; ipdb.set_trace()
+    # # import ipdb ipdb.set_trace()
     pos, local_expert_count, global_expert_count = count_by_gate(
         gate, num_expert, world_size
     )
@@ -76,7 +76,7 @@ def prepare_forward(gate, num_expert, world_size):
 
 
 def _local_scatter(inp, pos):
-    import ipdb; ipdb.set_trace()
+    # import ipdb ipdb.set_trace()
     # inp torch.Size([8192, 128])
     # pos torch.Size([16384])
     # inp_buf torch.Size([16384, 128])
@@ -85,7 +85,7 @@ def _local_scatter(inp, pos):
 
 
 def _local_gather(inp, pos, out_batch_size, maybe_overlap=True):
-    # import ipdb; ipdb.set_trace()
+    # # import ipdb ipdb.set_trace()
     inp_buf = torch.zeros(
         out_batch_size, inp.shape[-1], dtype=inp.dtype, device=inp.device
     )
@@ -113,7 +113,7 @@ class MOEScatter(Function):
         fwd_batch_size,
         world_size,
     ):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         # pos torch.Size([16384])
         # inp torch.Size([8192, 128])
         local_input_buf = _local_scatter(inp, pos) 
@@ -147,7 +147,7 @@ class MOEScatter(Function):
 
     @staticmethod
     def backward(ctx, global_grad_in):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         (pos, local_expert_count, global_expert_count) = ctx.saved_tensors
         (inp_batch_size, buf_batch_size, world_size) = ctx.moe_args
 
@@ -181,7 +181,7 @@ class MOEGather(Function):
         local_batch_size,
         world_size,
     ):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         if world_size > 1:
             local_output_buf = fmoe_cuda.global_gather(
                 global_output_buf,
@@ -203,7 +203,7 @@ class MOEGather(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         pos, local_expert_count, global_expert_count = ctx.saved_tensors
         fwd_batch_size, world_size = ctx.moe_args
         grad_out_buf = _local_scatter(grad_out.contiguous(), pos)
@@ -227,7 +227,7 @@ class AllGather(Function):
 
     @staticmethod
     def forward(ctx, inp, rank, world_size, group):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         tensor_list = [torch.empty_like(inp) for _ in range(world_size)]
         torch.distributed.all_gather(tensor_list, inp, group=group)
         torch.cuda.synchronize()
@@ -237,7 +237,7 @@ class AllGather(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         rank, dim0 = ctx.args
         return grad_out[rank * dim0 : (rank + 1) * dim0], None, None, None
 
@@ -249,7 +249,7 @@ class Slice(Function):
 
     @staticmethod
     def forward(ctx, inp, rank, world_size, group):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         B: int = inp.shape[0]
         local_batch_size = B // world_size
         batch_start = local_batch_size * rank
@@ -260,7 +260,7 @@ class Slice(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         world_size, group = ctx.args
         tensor_list = [torch.empty_like(grad_out) for _ in range(world_size)]
         torch.distributed.all_gather(tensor_list, grad_out, group=group)

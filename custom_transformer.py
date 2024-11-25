@@ -21,7 +21,7 @@ class _Expert(nn.Module):
         self.activation = activation
 
     def forward(self, inp, fwd_expert_count):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         r"""
         First expand input to 4h (the hidden size is variable, but is called h4
         for convenience). Then perform activation. Finally shirink back to h.
@@ -60,7 +60,7 @@ class FMoETransformerMLP(FMoE):
         self.mark_parallel_comm(expert_dp_comm)
 
     def forward(self, inp: torch.Tensor):
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         r"""
         This module wraps up the FMoE module with reshape, residual and layer
         normalization.
@@ -120,7 +120,7 @@ class FMoETransformerMLPOpt(FMoEOpt):
         This module wraps up the FMoE module with reshape, residual and layer
         normalization.
         """
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         original_shape = inp.shape
         inp = inp.reshape(-1, self.d_model)
         output = super().forward(inp)

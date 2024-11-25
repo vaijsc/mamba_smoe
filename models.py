@@ -14,7 +14,7 @@ import cmath
 # Size notations:
 # B = batch_size, H = hidden_size, M = block_size, L = attn_span
 def _skew(X, pad_value):
-    # import ipdb; ipdb.set_trace()
+    # # import ipdb ipdb.set_trace()
     """shift every row 1 step to right"""
     # X = B x M x L
     B, M, L = X.size() # torch.Size([256, 256, 256])
@@ -26,7 +26,7 @@ def _skew(X, pad_value):
 
 
 def _unskew(X):
-    # import ipdb; ipdb.set_trace()
+    # # import ipdb ipdb.set_trace()
     """reverse _skew operation"""
     # X = B x M x L+M
     B, M, L = X.size()
@@ -58,7 +58,7 @@ class SeqAttention(nn.Module):
     def forward(self, query, key, value, key_pe):
         # query size = B x M x H
         # key, value sizes = B x (M+L) x H
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         if self.adapt_span_enabled:
             # [optional] trim out memory to reduce unnecessary computation
             key, value, key_pe = self.adaptive_span.trim_memory(
@@ -73,7 +73,7 @@ class SeqAttention(nn.Module):
         # key_pe torch.Size([1, 16, 256])
         # attn_cont torch.Size([256, 256, 256])
         attn_cont = _unskew(attn_cont)  # B x M x L # torch.Size([256, 256, 256])
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         # compute the effect of position embedding
         attn_pos = torch.matmul(query, key_pe)  # B x M x L_pos - torch.Size([256, 256, 256])
         attn = attn_cont + attn_pos
@@ -188,7 +188,7 @@ class FeedForwardLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, h):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         h1 = F.relu(self.fc1(h))
         h1 = self.dropout(h1)
         h2 = self.fc2(h1)
@@ -220,7 +220,7 @@ class CustomizedMoEPositionwiseFF(FMoETransformerMLP):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, inp):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         # inp torch.Size([32, 256, 128])
         if self.pre_lnorm: # False [andnd81 reproduce]
             ##### layer normalization + positionwise feed-forward
@@ -276,7 +276,7 @@ class CustomizedMoEPositionwiseFFMoM(FMoETransformerMLP):
         self.layerth = layerth
 
     def forward(self, inp, moment):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         if self.pre_lnorm:
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
@@ -334,7 +334,7 @@ class CustomizedMoEPositionwiseFFAdam(FMoETransformerMLP):
         self.layerth = layerth
 
     def forward(self, inp, moment):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         if self.pre_lnorm:
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
@@ -424,7 +424,7 @@ class CustomizedMoEPositionwiseFFOpt(FMoETransformerMLPOpt):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, inp):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         if self.pre_lnorm:
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
@@ -566,7 +566,7 @@ class TransformerSeqLayer(nn.Module):
         self.g = g
 
     def forward(self, h, h_cache, moment, key_pe):
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         # h = B x M x H
         # h_cache = B x L x H
         if self.use_attn:
@@ -623,7 +623,7 @@ class TransformerSeq(nn.Module):
         self.arch = architecture
 
         arch = architecture
-        # import ipdb; ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         # print(arch)
         self.attn_layer_count = arch.count("s")
         self.layers = nn.ModuleList()
@@ -725,7 +725,7 @@ class TransformerSeq(nn.Module):
             )
 
     def forward(self, x, h_cache):
-        import ipdb; ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         # x size = B x M, e.g. [32 x 256]
         block_size = x.size(1)
         h = self.in_emb(x)  # B x M x H # embedding each token into 128 dimension
