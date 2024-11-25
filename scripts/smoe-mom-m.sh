@@ -1,11 +1,10 @@
-# mkdir -p /path/to/checkpoint/directory/
 #!/bin/bash
-#SBATCH --job-name=smoe_m_clean
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_clean.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_clean_err.txt
+#SBATCH --job-name=smoe_mm_clean
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_mm_clean_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_mm_clean.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
-#SBATCH --nodelist=sdc2-hpc-dgx-a100-018
+#SBATCH --nodelist=sdc2-hpc-dgx-a100-016
 #SBATCH --mem-per-gpu=50G
 #SBATCH --cpus-per-gpu=24
 #SBATCH --partition=research
@@ -13,7 +12,7 @@
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
 args="
---data /path/to/data/directory/wikitext-103/ \
+--data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/ \
 --base_arch transformer \
 --architecture smsmsmsmsmsm \
 --gate_name smoe \
@@ -29,7 +28,7 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 80 \
---batch-sz 48 \
+--batch-sz 16 \
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
@@ -38,11 +37,13 @@ args="
 --mu 0.7 \
 --beta1 0.9 \
 --beta2 0.999 \
---checkpoint /path/to/checkpoint/directory/smoe.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/smoe_mm_clean.pt \
 "
 
 echo "Training ..."
-CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10013 --nproc_per_node=4 --use_env train.py $args
+# CUDA_VISIBLE_DEVICES='0,1,2,3' 
+python -m torch.distributed.launch --master_port 10016 --nproc_per_node=1 --use_env train.py $args
 
 echo "Evaluation ..."
-CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10013 --nproc_per_node=4 --use_env train.py $args --resume --full-eval-mode
+# CUDA_VISIBLE_DEVICES='0,1,2,3' 
+python -m torch.distributed.launch --master_port 10016 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode
