@@ -1,4 +1,16 @@
-mkdir -p /path/to/checkpoint/directory/
+# mkdir -p /path/to/checkpoint/directory/
+#!/bin/bash
+#SBATCH --job-name=smoe_m_clean
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_clean.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_clean_err.txt
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
+#SBATCH --nodelist=sdc2-hpc-dgx-a100-018
+#SBATCH --mem-per-gpu=50G
+#SBATCH --cpus-per-gpu=24
+#SBATCH --partition=research
+#SBATCH --mail-type=all
+#SBATCH --mail-user=v.AnhND81@vinai.io
 
 args="
 --data /path/to/data/directory/wikitext-103/ \
