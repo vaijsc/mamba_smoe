@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=smoe_m_adam_clean
-# SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_adam_clean_err.txt
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_adam_clean_err.txt
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_adam_clean.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
