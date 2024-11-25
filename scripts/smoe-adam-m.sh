@@ -11,6 +11,15 @@
 #SBATCH --mail-type=all
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
+eval "$(conda shell.bash hook)"
+conda activate moe
+cd /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE
+echo "Current path is $PATH"
+echo "Running"
+# nvidia-smi
+echo $CUDA_VISIBLE_DEVICES
+# mkdir -p /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints
+
 args="
 --data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/ \
 --base_arch transformer \
