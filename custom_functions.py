@@ -10,6 +10,7 @@ _moe_group = None
 
 
 def ensure_comm(t, comm):
+    import ipdb; ipdb.set_trace()
     if comm is None:
         comm = get_torch_default_comm()
     global _moe_group
@@ -18,6 +19,7 @@ def ensure_comm(t, comm):
 
 
 def get_moe_group():
+    import ipdb; ipdb.set_trace()
     return _moe_group
 
 def count_by_gate(gate, num_expert, world_size, require_pos=True):
@@ -57,7 +59,7 @@ def prepare_forward(gate, num_expert, world_size):
         world_size: number of workers that hold different experts.
         comm: the communicator of all workers in the expert-parallel group.
     """
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     pos, local_expert_count, global_expert_count = count_by_gate(
         gate, num_expert, world_size
     )
@@ -74,11 +76,16 @@ def prepare_forward(gate, num_expert, world_size):
 
 
 def _local_scatter(inp, pos):
-    inp_buf = torch.index_select(inp, 0, pos)
+    import ipdb; ipdb.set_trace()
+    # inp torch.Size([8192, 128])
+    # pos torch.Size([16384])
+    # inp_buf torch.Size([16384, 128])
+    inp_buf = torch.index_select(inp, 0, pos) 
     return inp_buf
 
 
 def _local_gather(inp, pos, out_batch_size, maybe_overlap=True):
+    # import ipdb; ipdb.set_trace()
     inp_buf = torch.zeros(
         out_batch_size, inp.shape[-1], dtype=inp.dtype, device=inp.device
     )
@@ -106,7 +113,11 @@ class MOEScatter(Function):
         fwd_batch_size,
         world_size,
     ):
-        local_input_buf = _local_scatter(inp, pos)
+        import ipdb; ipdb.set_trace()
+        # pos torch.Size([16384])
+        # inp torch.Size([8192, 128])
+        local_input_buf = _local_scatter(inp, pos) 
+        # local_input_buf torch.Size([16384, 128])
         if world_size > 1:
             global_input_buf = fmoe_cuda.global_scatter(
                 local_input_buf,
@@ -118,12 +129,25 @@ class MOEScatter(Function):
         else:
             global_input_buf = local_input_buf
         ctx.moe_args = inp.shape[0], pos.shape[0], world_size
+        # ctx.moe_args (8192, 16384, 1)
         variables = (pos, local_expert_count, global_expert_count)
+        """
+        pos shape torch.Size([16384])
+        local_expert_count
+            tensor([1101, 1544, 1141,  725,  483, 1337,  787,  868, 1427, 1304, 1118,  904,
+         970,  896,  837,  942])
+            local_expert_count.shape torch.Size([16])
+            global_expert_count.shape torch.Size([16])
+        global_expert_count
+            tensor([1101, 1544, 1141,  725,  483, 1337,  787,  868, 1427, 1304, 1118,  904,
+                    970,  896,  837,  942])
+        """
         ctx.save_for_backward(*variables)
         return global_input_buf
 
     @staticmethod
     def backward(ctx, global_grad_in):
+        import ipdb; ipdb.set_trace()
         (pos, local_expert_count, global_expert_count) = ctx.saved_tensors
         (inp_batch_size, buf_batch_size, world_size) = ctx.moe_args
 
@@ -157,6 +181,7 @@ class MOEGather(Function):
         local_batch_size,
         world_size,
     ):
+        import ipdb; ipdb.set_trace()
         if world_size > 1:
             local_output_buf = fmoe_cuda.global_gather(
                 global_output_buf,
@@ -178,6 +203,7 @@ class MOEGather(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
+        import ipdb; ipdb.set_trace()
         pos, local_expert_count, global_expert_count = ctx.saved_tensors
         fwd_batch_size, world_size = ctx.moe_args
         grad_out_buf = _local_scatter(grad_out.contiguous(), pos)
@@ -201,6 +227,7 @@ class AllGather(Function):
 
     @staticmethod
     def forward(ctx, inp, rank, world_size, group):
+        import ipdb; ipdb.set_trace()
         tensor_list = [torch.empty_like(inp) for _ in range(world_size)]
         torch.distributed.all_gather(tensor_list, inp, group=group)
         torch.cuda.synchronize()
@@ -210,6 +237,7 @@ class AllGather(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
+        import ipdb; ipdb.set_trace()
         rank, dim0 = ctx.args
         return grad_out[rank * dim0 : (rank + 1) * dim0], None, None, None
 
@@ -221,6 +249,7 @@ class Slice(Function):
 
     @staticmethod
     def forward(ctx, inp, rank, world_size, group):
+        import ipdb; ipdb.set_trace()
         B: int = inp.shape[0]
         local_batch_size = B // world_size
         batch_start = local_batch_size * rank
@@ -231,6 +260,7 @@ class Slice(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
+        import ipdb; ipdb.set_trace()
         world_size, group = ctx.args
         tensor_list = [torch.empty_like(grad_out) for _ in range(world_size)]
         torch.distributed.all_gather(tensor_list, grad_out, group=group)

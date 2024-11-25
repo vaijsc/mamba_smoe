@@ -21,7 +21,7 @@ args="
 --lr-warmup 3000 \
 --niter 60 \
 --batch-sz 32 \
---batch-split 2 \
+--batch-split 1 \
 --nbatches 1000 \
 --distributed \
 --checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt

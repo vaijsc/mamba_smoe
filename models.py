@@ -14,17 +14,19 @@ import cmath
 # Size notations:
 # B = batch_size, H = hidden_size, M = block_size, L = attn_span
 def _skew(X, pad_value):
+    # import ipdb; ipdb.set_trace()
     """shift every row 1 step to right"""
     # X = B x M x L
-    B, M, L = X.size()
+    B, M, L = X.size() # torch.Size([256, 256, 256])
     X = F.pad(X, (0, M + 1), value=pad_value)  # B x M x (L+M+1)
     X = X.view(B, -1)  # B x ML+MM+M
     X = X[:, :-M]  # B x ML+MM
-    X = X.view(B, M, M + L)  # B x M x L+M
+    X = X.view(B, M, M + L)  # B x M x L+M torch.Size([256, 256, 512])
     return X
 
 
 def _unskew(X):
+    # import ipdb; ipdb.set_trace()
     """reverse _skew operation"""
     # X = B x M x L+M
     B, M, L = X.size()
@@ -32,7 +34,7 @@ def _unskew(X):
     X = X.view(B, -1)  # B x ML+MM
     X = F.pad(X, (0, M))  # B x ML+MM+M
     X = X.view(B, M, M + L + 1)  # B x M x L+M+1
-    X = X[:, :, :L]  # B x M x L
+    X = X[:, :, :L]  # B x M x L # torch.Size([256, 256, 256])
     return X
 
 
@@ -56,7 +58,7 @@ class SeqAttention(nn.Module):
     def forward(self, query, key, value, key_pe):
         # query size = B x M x H
         # key, value sizes = B x (M+L) x H
-
+        # import ipdb; ipdb.set_trace()
         if self.adapt_span_enabled:
             # [optional] trim out memory to reduce unnecessary computation
             key, value, key_pe = self.adaptive_span.trim_memory(
@@ -66,10 +68,14 @@ class SeqAttention(nn.Module):
         # compute attention from context
         # B x M (dest) x (M+L) (src)
         attn_cont = torch.matmul(query, key.transpose(-1, -2))
-        attn_cont = _unskew(attn_cont)  # B x M x L
-
+        # query torch.Size([256, 256, 16])
+        # key torch.Size([256, 512, 16])
+        # key_pe torch.Size([1, 16, 256])
+        # attn_cont torch.Size([256, 256, 256])
+        attn_cont = _unskew(attn_cont)  # B x M x L # torch.Size([256, 256, 256])
+        # import ipdb; ipdb.set_trace()
         # compute the effect of position embedding
-        attn_pos = torch.matmul(query, key_pe)  # B x M x L_pos
+        attn_pos = torch.matmul(query, key_pe)  # B x M x L_pos - torch.Size([256, 256, 256])
         attn = attn_cont + attn_pos
 
         attn = attn / math.sqrt(self.hidden_size)  # B x M X L_pos
@@ -81,6 +87,8 @@ class SeqAttention(nn.Module):
         attn = self.dropout(attn)  # B x M X L_pos
 
         attn_cont = _skew(attn, 0)  # B x M X (L+M)
+        # attn_cont torch.Size([256, 256, 512])
+        # value torch.Size([256, 512, 16])
         out = torch.matmul(attn_cont, value)  # B x M x H
         return out
 
@@ -125,10 +133,10 @@ class MultiHeadSeqAttention(nn.Module):
         key = self.head_reshape(key)
 
         out = self.attn(query, key, value, key_pe)  # B_K x M x D
-        out = out.view(B, K, M, D)  # B x K x M x D
-        out = out.transpose(1, 2).contiguous()  # B x M x K x D
+        out = out.view(B, K, M, D)  # B x K x M x D torch.Size([32, 8, 256, 16])
+        out = out.transpose(1, 2).contiguous()  # B x M x K x D 
         out = out.view(B, M, -1)  # B x M x K_D
-        out = self.proj_out(out)
+        out = self.proj_out(out) # torch.Size([32, 256, 128])
         return out
 
 class MultiHeadSeqSymAttention(nn.Module):
@@ -213,6 +221,7 @@ class CustomizedMoEPositionwiseFF(FMoETransformerMLP):
 
     def forward(self, inp):
         import ipdb; ipdb.set_trace()
+        # inp torch.Size([32, 256, 128])
         if self.pre_lnorm: # False [andnd81 reproduce]
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
@@ -267,6 +276,7 @@ class CustomizedMoEPositionwiseFFMoM(FMoETransformerMLP):
         self.layerth = layerth
 
     def forward(self, inp, moment):
+        import ipdb; ipdb.set_trace()
         if self.pre_lnorm:
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
@@ -324,6 +334,7 @@ class CustomizedMoEPositionwiseFFAdam(FMoETransformerMLP):
         self.layerth = layerth
 
     def forward(self, inp, moment):
+        import ipdb; ipdb.set_trace()
         if self.pre_lnorm:
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
@@ -413,6 +424,7 @@ class CustomizedMoEPositionwiseFFOpt(FMoETransformerMLPOpt):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, inp):
+        import ipdb; ipdb.set_trace()
         if self.pre_lnorm:
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
@@ -554,13 +566,13 @@ class TransformerSeqLayer(nn.Module):
         self.g = g
 
     def forward(self, h, h_cache, moment, key_pe):
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         # h = B x M x H
         # h_cache = B x L x H
         if self.use_attn:
             h_all = torch.cat([h_cache, h], dim=1)  # B x (M+L) x H
-            attn_out = self.attn(h, h_all, h_all, key_pe)
-            h = self.norm1(h + attn_out)  # B x M x H
+            attn_out = self.attn(h, h_all, h_all, key_pe) # torch.Size([32, 256, 128])
+            h = self.norm1(h + attn_out)  # B x M x H # residual
         if self.use_smoe:
             if self.g == "m" or self.g == "a":
                 smoe_out, moment = self.smoe(h, moment)
@@ -714,7 +726,7 @@ class TransformerSeq(nn.Module):
 
     def forward(self, x, h_cache):
         import ipdb; ipdb.set_trace()
-        # x size = B x M, e.g. [16 x 256]
+        # x size = B x M, e.g. [32 x 256]
         block_size = x.size(1)
         h = self.in_emb(x)  # B x M x H # embedding each token into 128 dimension
         h_cache_next = []
@@ -735,6 +747,8 @@ class TransformerSeq(nn.Module):
                 h, moment = layer(h, h_cache[l], moment, self.key_pe)  # B x M x H
             else:
                 h = layer(h, [], self.key_pe)
-
+        # print(h.shape) torch.Size([32, 256, 128])
+        # self.out_emb(h).shape torch.Size([32, 256, 267735]) 
+        # out torch.Size([32, 256, 267735])
         out = F.log_softmax(self.out_emb(h), dim=-1)
         return out, h_cache_next

@@ -26,9 +26,10 @@ class _Expert(nn.Module):
         First expand input to 4h (the hidden size is variable, but is called h4
         for convenience). Then perform activation. Finally shirink back to h.
         """
+        # inp torch.Size([16384, 128]), fwd_expert_count shape 16
         x = self.htoh4(inp, fwd_expert_count)
         x = self.activation(x)
-        x = self.h4toh(x, fwd_expert_count)
+        x = self.h4toh(x, fwd_expert_count) # torch.Size([16384, 128])
         return x
 
 
@@ -59,15 +60,16 @@ class FMoETransformerMLP(FMoE):
         self.mark_parallel_comm(expert_dp_comm)
 
     def forward(self, inp: torch.Tensor):
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         r"""
         This module wraps up the FMoE module with reshape, residual and layer
         normalization.
         """
-        original_shape = inp.shape # torch.Size([16, 256, 128])
+        original_shape = inp.shape # torch.Size([32, 256, 128])
         inp = inp.reshape(-1, self.d_model) # self.d_model 128
-        output = super().forward(inp)
-        return output.reshape(original_shape)
+        # inp torch.Size([8192, 128])
+        output = super().forward(inp) # output shape torch.Size([16384, 128])
+        return output.reshape(original_shape) # torch.Size([32, 256, 128])
 
 
 class FMoETransformerMLPOpt(FMoEOpt):
@@ -118,6 +120,7 @@ class FMoETransformerMLPOpt(FMoEOpt):
         This module wraps up the FMoE module with reshape, residual and layer
         normalization.
         """
+        import ipdb; ipdb.set_trace()
         original_shape = inp.shape
         inp = inp.reshape(-1, self.d_model)
         output = super().forward(inp)
