@@ -2,3 +2,4 @@ wandb/
 result/
 experiments/
 __pycache__/
+vmoe/result 

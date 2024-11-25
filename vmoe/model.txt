@@ -1,0 +1,44 @@
+DistributedDataParallel(
+  (module): TransformerSeq(
+    (in_emb): Embedding(267735, 128)
+    (out_emb): Linear(in_features=128, out_features=267735, bias=True)
+    (layers): ModuleList(
+      (0-2): 3 x TransformerSeqLayer(
+        (attn): MultiHeadSeqAttention(
+          (attn): SeqAttention(
+            (dropout): Dropout(p=0.7, inplace=False)
+          )
+          (proj_query): Linear(in_features=128, out_features=128, bias=False)
+          (proj_out): Linear(in_features=128, out_features=128, bias=False)
+          (proj_val): Linear(in_features=128, out_features=128, bias=False)
+          (proj_key): Linear(in_features=128, out_features=128, bias=False)
+        )
+        (smoe): CustomizedMoEPositionwiseFF(
+          (gate): CustomNaiveGate_Balance_SMoE(
+            (gate): Linear(in_features=128, out_features=16, bias=True)
+          )
+          (experts): _Expert(
+            (htoh4): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
+            (h4toh): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
+            (activation): Sequential(
+              (0): ReLU()
+              (1): Dropout(p=0.7, inplace=False)
+            )
+          )
+          (layer_norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.7, inplace=False)
+        )
+        (norm1): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        (norm3): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+      )
+    )
+  )
+)
+
+my rank=0 local_rank=0
+data_params:     {'data_path': '/home/ubuntu/workspace/dataset/wikitext-103', 'data_name': 'text8'}
+model_params:    {'hidden_size': 128, 'inner_hidden_size': 128, 'nb_layers': 3, 'block_size': 256, 'nb_heads': 8, 'attn_span': 256, 'dropout': 0.7, 'architecture': 'sgsgsg', 'base_arch': 'transformer', 'smoe_dropout': False, 'optimal_policy': False, 'load_balance': 0.01, 'moe_top_k': 2, 'freq': 0.03, 'freq_type': 'fix', 'alpha': 1.0, 'gate_name': 'smoe', 'act_experts': 'shuffle', 'g_blance': False, 'opt_blance': False, 'combine_gate': False, 'opt_loss': 'mse', 'gamma1': 1.0, 'gamma2': 1.0, 'mu': 0.9, 'beta1': 0.9, 'beta2': 0.999}
+optim_params:    {'lr': 0.0007, 'momentum': 0.9, 'optim': 'adam', 'lr_warmup': 3000, 'grad_clip': 0}
+trainer_params:  {'batch_size': 32, 'batch_split': 2, 'nb_batches_per_iter': 1000, 'nb_iter': 60, 'checkpoint_path': '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt', 'resume': False, 'pretrained_weight': '', 'full_eval_mode': False}
+adapt_span_params:       {'adapt_span_enabled': False, 'adapt_span_loss': 0, 'adapt_span_ramp': 32, 'adapt_span_init': 0, 'adapt_span_cache': False}
