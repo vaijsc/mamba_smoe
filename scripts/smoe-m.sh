@@ -37,13 +37,14 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 80 \
---batch-sz 48 \
+--batch-sz 24 \
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
 --checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/smoe_m_clean.pt \
 "
-
+ 
+# bs 48
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1,2,3' 
 python -m torch.distributed.launch --master_port 10013 --nproc_per_node=1 --use_env train.py $args
