@@ -138,6 +138,46 @@ class MultiHeadSeqAttention(nn.Module):
         out = out.view(B, M, -1)  # B x M x K_D
         out = self.proj_out(out) # torch.Size([32, 256, 128])
         return out
+    
+class MultiHeadVisionAttention(nn.Module):
+    def __init__(self, hidden_size, nb_heads, **kargs):
+        nn.Module.__init__(self)
+        assert hidden_size % nb_heads == 0
+        self.nb_heads = nb_heads
+        self.head_dim = hidden_size // nb_heads
+        self.attn = SeqAttention(hidden_size=self.head_dim, nb_heads=nb_heads, **kargs)
+        self.proj_query = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.proj_out = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.proj_val = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.proj_key = nn.Linear(hidden_size, hidden_size, bias=False)
+
+    def head_reshape(self, x):
+        K = self.nb_heads
+        D = self.head_dim
+        x = x.view(x.size()[:-1] + (K, D))  # B x (M+L) x K x D
+        x = x.transpose(1, 2).contiguous()  # B x K x (M+L) x D
+        x = x.view(-1, x.size(-2), x.size(-1))  # B_K x (M+L) x D
+        return x
+
+    def forward(self, query, key, value, key_pe):
+        B = query.size(0)
+        K = self.nb_heads
+        D = self.head_dim
+        M = query.size(1)
+
+        query = self.proj_query(query)
+        query = self.head_reshape(query)
+        value = self.proj_val(value)
+        value = self.head_reshape(value)
+        key = self.proj_key(key)
+        key = self.head_reshape(key)
+
+        out = self.attn(query, key, value, key_pe)  # B_K x M x D
+        out = out.view(B, K, M, D)  # B x K x M x D torch.Size([32, 8, 256, 16])
+        out = out.transpose(1, 2).contiguous()  # B x M x K x D 
+        out = out.view(B, M, -1)  # B x M x K_D
+        out = self.proj_out(out) # torch.Size([32, 256, 128])
+        return out 
 
 class MultiHeadSeqSymAttention(nn.Module):
     def __init__(self, hidden_size, nb_heads, **kargs):
@@ -584,6 +624,146 @@ class TransformerSeqLayer(nn.Module):
             h = self.norm3(h + ff_out)  # B x M x H
         return h, moment
 
+class TransformerVisionLayer(nn.Module):
+    def __init__(
+        self,
+        hidden_size,
+        inner_hidden_size,
+        dropout,
+        s,
+        g,
+        f,
+        gate_name,
+        optimal_policy,
+        moe_top_k,
+        freq,
+        alpha,
+        act_experts,
+        g_blance,
+        opt_blance,
+        combine_gate,
+        opt_loss,
+        gamma1=1.0,
+        gamma2=1.0,
+        mu=0.7,
+        beta1=0.9,
+        beta2=0.999,
+        layerth=0,
+        **kargs,
+    ):
+        nn.Module.__init__(self)
+        if gate_name in ["smoe", "smoe-dropout"]:
+            gate = CustomNaiveGate_Balance_SMoE
+        elif gate_name == "xmoe":
+            gate = CustomNaiveGate_Balance_XMoE
+        elif gate_name == "stablemoe":
+            gate = CustomNaiveGate_Balance_StableMoE
+        else:
+            print(f"{gate_name} has not been implemented yet!")
+
+        self.attn = (
+            MultiHeadVisionAttention(hidden_size=hidden_size, dropout=dropout, **kargs)
+            if s is "s"
+            else None
+        )
+        if optimal_policy:
+            self.smoe = (
+                CustomizedMoEPositionwiseFFOpt(
+                    gate,
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                    freq=freq,
+                    alpha=alpha,
+                    act_experts=act_experts,
+                    g_blance=g_blance,
+                    opt_blance=opt_blance,
+                    combine_gate=combine_gate,
+                    opt_loss=opt_loss,
+                )
+                if g is "g"
+                else None
+            )
+        else:
+            self.smoe = (
+                CustomizedMoEPositionwiseFF(
+                    gate,
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                )
+                if g is "g"
+                else 
+                CustomizedMoEPositionwiseFFMoM(
+                    gate,
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                    gamma1=gamma1,
+                    gamma2=gamma2,
+                    mu=mu,
+                    beta1=beta1,
+                    beta2=beta2,
+                    layerth=layerth,
+                )
+                if g is "m"
+                else 
+                CustomizedMoEPositionwiseFFAdam(
+                    gate,
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                    gamma1=gamma1,
+                    gamma2=gamma2,
+                    mu=mu,
+                    beta1=beta1,
+                    beta2=beta2,
+                    layerth=layerth,
+                )
+                if g is "a"
+                else None
+            )
+
+        self.ff = (
+            FeedForwardLayer(
+                hidden_size=hidden_size,
+                inner_hidden_size=inner_hidden_size,
+                dropout=dropout,
+            )
+            if f is "f"
+            else None
+        )
+        self.norm1 = nn.LayerNorm(hidden_size)
+        self.norm2 = nn.LayerNorm(hidden_size)
+        self.norm3 = nn.LayerNorm(hidden_size)
+
+        self.use_attn = s == "s"
+        self.use_smoe = g == "g" or g == "m" or g == "a"
+        self.use_ff = f == "f"
+        self.g = g
+
+    def forward(self, h, h_cache, moment, key_pe):
+        # # import ipdb ipdb.set_trace()
+        # h = B x M x H
+        # h_cache = B x L x H
+        if self.use_attn:
+            h_all = torch.cat([h_cache, h], dim=1)  # B x (M+L) x H
+            attn_out = self.attn(h, h_all, h_all, key_pe) # torch.Size([32, 256, 128])
+            h = self.norm1(h + attn_out)  # B x M x H # residual
+        if self.use_smoe:
+            if self.g == "m" or self.g == "a":
+                smoe_out, moment = self.smoe(h, moment)
+            elif self.g == "g":
+                smoe_out = self.smoe(h)
+            h = self.norm2(h + smoe_out)  # B x M x H
+        if self.use_ff:
+            ff_out = self.ff(h)
+            h = self.norm3(h + ff_out)  # B x M x H
+        return h, moment
 
 class TransformerSeq(nn.Module):
     def __init__(
@@ -690,6 +870,174 @@ class TransformerSeq(nn.Module):
                             **kargs,
                         ),
                         TransformerSeqLayer(
+                            hidden_size=hidden_size,
+                            inner_hidden_size=inner_hidden_size,
+                            s=arch[4 * i + 2],
+                            g=None,
+                            f=arch[4 * i + 3],
+                            gate_name=gate_name,
+                            optimal_policy=optimal_policy,
+                            nb_heads=nb_heads,
+                            dropout=dropout,
+                            moe_top_k=moe_top_k,
+                            freq=freq,
+                            alpha=alpha,
+                            act_experts=act_experts,
+                            g_blance=g_blance,
+                            opt_blance=opt_blance,
+                            combine_gate=combine_gate,
+                            opt_loss=opt_loss,
+                            attn_span=attn_span,
+                            gamma1=gamma1,
+                            gamma2=gamma2,
+                            mu=mu,
+                            beta1=beta1,
+                            beta2=beta2,
+                            layerth=i,
+                            **kargs,
+                        ),
+                    ]
+                )
+
+        else:
+            raise RuntimeError(
+                "wrong type of base architecture - must be 'transformer' or 'glam'"
+            )
+
+    def forward(self, x, h_cache):
+        # import ipdb ipdb.set_trace()
+        # x size = B x M, e.g. [32 x 256]
+        block_size = x.size(1)
+        h = self.in_emb(x)  # B x M x H # embedding each token into 128 dimension
+        h_cache_next = []
+        if 'a' in self.arch:
+            moment = (torch.zeros_like(h),torch.zeros_like(h),torch.zeros_like(h))
+        else:
+            moment = torch.zeros_like(h)
+        for l, layer in enumerate(self.layers):
+            if layer.use_attn:
+                cache_size = layer.attn.attn.get_cache_size() # 256
+                if cache_size > block_size:
+                    h_cache_next_l = torch.cat(
+                        [h_cache[l][:, -cache_size + block_size :, :], h], dim=1
+                    ).detach()
+                else:
+                    h_cache_next_l = h[:, -cache_size:, :].detach()
+                h_cache_next.append(h_cache_next_l)
+                h, moment = layer(h, h_cache[l], moment, self.key_pe)  # B x M x H
+            else:
+                h = layer(h, [], self.key_pe)
+        # print(h.shape) torch.Size([32, 256, 128])
+        # self.out_emb(h).shape torch.Size([32, 256, 267735]) 
+        # out torch.Size([32, 256, 267735])
+        out = F.log_softmax(self.out_emb(h), dim=-1)
+        return out, h_cache_next
+
+class TransformerVision(nn.Module):
+    def __init__(
+        self,
+        vocab_size,
+        hidden_size,
+        inner_hidden_size,
+        nb_heads,
+        nb_layers,
+        attn_span,
+        architecture,
+        base_arch,
+        gate_name,
+        optimal_policy,
+        dropout,
+        moe_top_k,
+        freq,
+        alpha,
+        act_experts,
+        g_blance,
+        opt_blance,
+        combine_gate,
+        opt_loss,
+        gamma1,
+        gamma2,
+        mu,
+        beta1,
+        beta2,
+        **kargs,
+    ):
+        nn.Module.__init__(self)
+        # token embeddings
+        self.in_emb = nn.Embedding(vocab_size, hidden_size) # Embedding(267735, 128)
+        self.out_emb = nn.Linear(hidden_size, vocab_size) 
+        # position embeddings
+        self.key_pe = nn.Parameter(torch.randn(1, hidden_size // nb_heads, attn_span)) # torch.Size([1, 16, 256])
+        self.arch = architecture
+
+        arch = architecture
+        # # import ipdb ipdb.set_trace()
+        # print(arch)
+        self.attn_layer_count = arch.count("s")
+        self.layers = nn.ModuleList()
+        if base_arch == "transformer":
+            self.layers.extend(
+                TransformerVisionLayer(
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    s=arch[2 * i],
+                    g=arch[2 * i + 1],
+                    f=None,
+                    gate_name=gate_name,
+                    optimal_policy=optimal_policy,
+                    nb_heads=nb_heads,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                    freq=freq,
+                    alpha=alpha,
+                    act_experts=act_experts,
+                    g_blance=g_blance,
+                    opt_blance=opt_blance,
+                    combine_gate=combine_gate,
+                    opt_loss=opt_loss,
+                    attn_span=attn_span,
+                    gamma1=gamma1,
+                    gamma2=gamma2,
+                    mu=mu,
+                    beta1=beta1,
+                    beta2=beta2,
+                    layerth=i,
+                    **kargs,
+                )
+                for i in range(nb_layers)
+            )
+        elif base_arch == "glam":
+            for i in range(nb_layers):
+                self.layers.extend(
+                    [
+                        TransformerVisionLayer(
+                            hidden_size=hidden_size,
+                            inner_hidden_size=inner_hidden_size,
+                            s=arch[4 * i],
+                            g=arch[4 * i + 1],
+                            f=None,
+                            gate_name=gate_name,
+                            optimal_policy=optimal_policy,
+                            nb_heads=nb_heads,
+                            dropout=dropout,
+                            moe_top_k=moe_top_k,
+                            freq=freq,
+                            alpha=alpha,
+                            act_experts=act_experts,
+                            g_blance=g_blance,
+                            opt_blance=opt_blance,
+                            combine_gate=combine_gate,
+                            opt_loss=opt_loss,
+                            attn_span=attn_span,
+                            gamma1=gamma1,
+                            gamma2=gamma2,
+                            mu=mu,
+                            beta1=beta1,
+                            beta2=beta2,
+                            layerth=i,
+                            **kargs,
+                        ),
+                        TransformerVisionLayer(
                             hidden_size=hidden_size,
                             inner_hidden_size=inner_hidden_size,
                             s=arch[4 * i + 2],

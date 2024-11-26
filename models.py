@@ -58,7 +58,7 @@ class SeqAttention(nn.Module):
     def forward(self, query, key, value, key_pe):
         # query size = B x M x H
         # key, value sizes = B x (M+L) x H
-        # # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         if self.adapt_span_enabled:
             # [optional] trim out memory to reduce unnecessary computation
             key, value, key_pe = self.adaptive_span.trim_memory(
@@ -112,6 +112,7 @@ class MultiHeadSeqAttention(nn.Module):
         self.proj_key = nn.Linear(hidden_size, hidden_size, bias=False)
 
     def head_reshape(self, x):
+        # import ipdb; ipdb.set_trace()
         K = self.nb_heads
         D = self.head_dim
         x = x.view(x.size()[:-1] + (K, D))  # B x (M+L) x K x D
@@ -120,6 +121,7 @@ class MultiHeadSeqAttention(nn.Module):
         return x
 
     def forward(self, query, key, value, key_pe):
+        # import ipdb; ipdb.set_trace()
         B = query.size(0)
         K = self.nb_heads
         D = self.head_dim
@@ -152,6 +154,7 @@ class MultiHeadSeqSymAttention(nn.Module):
         self.proj_key = nn.Linear(hidden_size, hidden_size, bias=False)
 
     def head_reshape(self, x):
+        # import ipdb; ipdb.set_trace()
         K = self.nb_heads
         D = self.head_dim
         x = x.view(x.size()[:-1] + (K, D))  # B x (M+L) x K x D
@@ -160,6 +163,7 @@ class MultiHeadSeqSymAttention(nn.Module):
         return x
 
     def forward(self, query, key, value, key_pe):
+        # import ipdb; ipdb.set_trace()
         B = query.size(0)
         K = self.nb_heads
         D = self.head_dim
@@ -220,9 +224,8 @@ class CustomizedMoEPositionwiseFF(FMoETransformerMLP):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, inp):
-        # import ipdb ipdb.set_trace()
-        # inp torch.Size([32, 256, 128])
-        if self.pre_lnorm: # False [andnd81 reproduce]
+        # import ipdb; ipdb.set_trace()
+        if self.pre_lnorm: # False 
             ##### layer normalization + positionwise feed-forward
             core_out = super().forward(self.layer_norm(inp))
             core_out = self.dropout(core_out)
@@ -566,9 +569,14 @@ class TransformerSeqLayer(nn.Module):
         self.g = g
 
     def forward(self, h, h_cache, moment, key_pe):
-        # # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         # h = B x M x H
         # h_cache = B x L x H
+        
+        # h_cache [8, 256, 128]
+        # h [8, 256, 128]
+        # key_pe torch.Size([1, 16, 256])
+        # h_all torch.Size([8, 512, 128])
         if self.use_attn:
             h_all = torch.cat([h_cache, h], dim=1)  # B x (M+L) x H
             attn_out = self.attn(h, h_all, h_all, key_pe) # torch.Size([32, 256, 128])
@@ -725,10 +733,12 @@ class TransformerSeq(nn.Module):
             )
 
     def forward(self, x, h_cache):
-        # import ipdb ipdb.set_trace()
-        # x size = B x M, e.g. [32 x 256]
+        # import ipdb; ipdb.set_trace()
+        # x size = B x M 
+        # torch.Size([8, 256])
         block_size = x.size(1)
         h = self.in_emb(x)  # B x M x H # embedding each token into 128 dimension
+        # torch.Size([8, 256, 128])
         h_cache_next = []
         if 'a' in self.arch:
             moment = (torch.zeros_like(h),torch.zeros_like(h),torch.zeros_like(h))
@@ -742,13 +752,10 @@ class TransformerSeq(nn.Module):
                         [h_cache[l][:, -cache_size + block_size :, :], h], dim=1
                     ).detach()
                 else:
-                    h_cache_next_l = h[:, -cache_size:, :].detach()
+                    h_cache_next_l = h[:, -cache_size:, :].detach() # [8, 128]
                 h_cache_next.append(h_cache_next_l)
                 h, moment = layer(h, h_cache[l], moment, self.key_pe)  # B x M x H
             else:
                 h = layer(h, [], self.key_pe)
-        # print(h.shape) torch.Size([32, 256, 128])
-        # self.out_emb(h).shape torch.Size([32, 256, 267735]) 
-        # out torch.Size([32, 256, 267735])
         out = F.log_softmax(self.out_emb(h), dim=-1)
         return out, h_cache_next

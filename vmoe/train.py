@@ -9,9 +9,9 @@ import torch
 import time
 
 from vmoe.config import PARAMS_CONFIG
-from vmoe.data import get_train_val_test_data_imagenet1k
+from vmoe.data import get_train_val_data
 from vmoe.models import TransformerSeq
-from trainer import train_iteration, full_eval
+from vmoe.trainer import train_iteration, full_eval
 import datetime
 import wandb
 import os
@@ -65,10 +65,11 @@ def launch(
     #     device=device,
     # )
     # import ipdb; ipdb.set_trace()
-    train_data, val_data = get_train_val_test_data_imagenet1k(data_params=data_params,
-                                                              env_params=env_params,
-                                                              batch_size=trainer_params["batch_size"],
-                                                              device=device)
+    
+    train_data, val_data = get_train_val_data(data_params['data_path'], 
+                                              batch_size=trainer_params['batch_size'],
+                                              env_params=env_params,
+                                              device=device)
 
     # MODEL
     model = TransformerSeq(
@@ -76,6 +77,13 @@ def launch(
         **model_params,
         adapt_span_params=adapt_span_params,
     )
+    
+    # model = TransformerVision(
+    #     vocab_size=data_params["vocab_size"],
+    #     **model_params,
+    #     adapt_span_params=adapt_span_params,
+    # )
+    
     print(model)
     if distributed:
         local_rank = env_params["local_rank"]
@@ -142,33 +150,12 @@ def launch(
                 model_params["block_size"],
                 model_params["hidden_size"],
             )
-            loss_test = full_eval(
-                model,
-                optimizer,
-                scheduler,
-                test_data,
-                model_params["block_size"],
-                model_params["hidden_size"],
-            )
             if distributed:
                 # collect results into rank0
-                stats = torch.tensor([loss_val, loss_test]).to(device)
+                stats = torch.tensor([loss_val]).to(device)
                 torch.distributed.reduce(stats, 0)
                 if env_params["rank"] == 0:
                     loss_val = stats[0] / env_params["world_size"]
-                    loss_test = stats[1] / env_params["world_size"]
-                else:
-                    return
-
-            # print('Test BPC: {:.4f}'.format(loss_test / math.log(2)))
-            if ("enwik8" in data_params["data_path"]) or (
-                "text8" in data_params["data_path"]
-            ):
-                logging("Val: {:.3f} BPC".format(loss_val / math.log(2)))
-                logging("Test: {:.3f} BPC".format(loss_test / math.log(2)))
-            else:
-                logging("Val: {:.3f} PPL".format(math.exp(loss_val)))
-                logging("Test: {:.3f} PPL".format(math.exp(loss_test)))
         return
     
     # position of current batch

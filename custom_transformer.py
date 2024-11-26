@@ -60,7 +60,7 @@ class FMoETransformerMLP(FMoE):
         self.mark_parallel_comm(expert_dp_comm)
 
     def forward(self, inp: torch.Tensor):
-        # # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         r"""
         This module wraps up the FMoE module with reshape, residual and layer
         normalization.

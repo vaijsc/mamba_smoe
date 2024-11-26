@@ -54,6 +54,7 @@ class Corpus:
 
 
 def _batchify(data_tensor, batch_size):
+    # import ipdb; ipdb.set_trace()
     nb_batches = data_tensor.size(0) // batch_size
     # trim away some tokens to make whole batches
     data_tensor = data_tensor.narrow(0, 0, nb_batches * batch_size)
@@ -98,10 +99,10 @@ def _get_train_val_test_data(corpus, batch_size):
 def get_train_val_test_data(data_params, env_params, batch_size, device):
     corpus = _build_corpus(**data_params, env_params=env_params)
     data_params["vocab_size"] = corpus.vocab_size
+    # import ipdb; ipdb.set_trace()
     train_data, val_data, test_data = _get_train_val_test_data(
         corpus=corpus, batch_size=batch_size
     )
-
     if env_params["distributed"]:
         # split the data into equal parts
         assert batch_size % env_params["world_size"] == 0

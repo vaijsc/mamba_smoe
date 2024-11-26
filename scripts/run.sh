@@ -1,8 +1,13 @@
 export CUDA_VISIBLE_DEVICES=2
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
-# mkdir -p /home/ubuntu/workspace/MomentumSMoE/result/checkpoints
-#sgsgsg
+eval "$(conda shell.bash hook)"
+conda activate moe
+# echo "Current path is $PATH"
+echo "Running"
+# nvidia-smi
+echo "Using GPUs: $CUDA_VISIBLE_DEVICES"
+
 args="
 --data /home/ubuntu/workspace/dataset/wikitext-103 \
 --base_arch transformer \
@@ -24,15 +29,16 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt
+--checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe.pt
 "
+
 #--checkpoint /path/to/checkpoint/directory/smoe.pt \
 #block_sz: shape of input
 echo "Training ..."
 #CUDA_VISIBLE_DEVICES='0,1,2,3'
-python -m torch.distributed.launch --master_port 10014 --nproc_per_node=1 --use_env train_1.py $args \
-> >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
+python -m torch.distributed.launch --master_port 10014 --nproc_per_node=1 --use_env train_1.py $args #\
+# > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
 echo "Evaluation ..."
-python -m torch.distributed.launch --master_port 10014 --nproc_per_node=1 --use_env train_1.py $args --resume --full-eval-mode \ 
-> >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
+python -m torch.distributed.launch --master_port 10014 --nproc_per_node=1 --use_env train_1.py $args --resume --full-eval-mode #\ 
+# > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1

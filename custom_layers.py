@@ -177,7 +177,7 @@ class FMoE(nn.Module):
         self.moe_group = moe_group
 
     def expert_fn(self, inp, fwd_expert_count):
-        # # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         r"""
         The default expert function which either calls the experts as a whole
         or as separate experts.
@@ -212,7 +212,7 @@ class FMoE(nn.Module):
         mark_module_parallel_comm(self.gate, "gate")
 
     def forward(self, moe_inp):
-        # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         r"""
         The FMoE module first computes gate output, and then conduct MoE forward
         according to the gate.  The score of the selected gate given by the

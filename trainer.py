@@ -9,10 +9,15 @@ from custom_gates import *
 
 def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
     """Single training step."""
-    # import ipdb ipdb.set_trace()
-    out, h_cache = model(X, h_cache)
+    # import ipdb; ipdb.set_trace()
+    # X torch.Size([8, 256])
+    out, h_cache = model(X, h_cache) 
+    # out torch.Size([8, 256, 267735])
+    # h_cache [torch.Size([8, 256, 128]), torch.Size([8, 256, 128]), torch.Size([8, 256, 128])]
     out = out.view(-1, out.size(-1))
+    # torch.Size([2048, 267735])
     loss = torch.nn.functional.nll_loss(out, Y.view(-1))
+    
     loss_value = loss.item() / loss_div
 
     if not eval_only:
@@ -40,7 +45,7 @@ def _train_batch(
     model, load_balance, optimizer, scheduler, X, Y, h_cache, eval_only, batch_split
 ):
     """Train on a batch."""
-    # import ipdb ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     optimizer.zero_grad()
 
     if batch_split == 1:
@@ -54,7 +59,7 @@ def _train_batch(
         h_cache_list = []
         
         for split_ind in range(batch_split):
-            split_slice = slice(split_ind * split_size, (split_ind + 1) * split_size)
+            split_slice = slice(split_ind * split_size, (split_ind + 1) * split_size) # [0, 8, :]
             split_h_cache = [h[split_slice, :, :] for h in h_cache]
             split_loss_value, split_h_cache = _train_step(
                 model,
@@ -70,7 +75,7 @@ def _train_batch(
         h_cache = [
             torch.cat([h_cache_list[i][l] for i in range(batch_split)], dim=0)
             for l in range(len(h_cache))
-        ]
+        ] # [2, 3]
     if not eval_only:
         if scheduler is not None:
             scheduler.step()
@@ -103,7 +108,7 @@ def train_iteration(
         model.eval()
     else:
         model.train()
-
+    # import ipdb; ipdb.set_trace()
     nb_batches_per_iter_max = nb_batches_per_iter
     if eval_only:
         # eval on fewer batches during training for speed-up
