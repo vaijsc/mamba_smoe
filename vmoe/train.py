@@ -8,8 +8,8 @@ import math, random
 import torch
 import time
 
-from config import PARAMS_CONFIG
-from data import get_train_val_test_data
+from vmoe.config import PARAMS_CONFIG
+from vmoe.data import get_train_val_test_data_imagenet1k
 from vmoe.models import TransformerSeq
 from trainer import train_iteration, full_eval
 import datetime
@@ -58,12 +58,17 @@ def launch(
         print("adapt_span_params:\t", adapt_span_params)
 
     # DATA
-    train_data, val_data, test_data = get_train_val_test_data(
-        data_params=data_params,
-        env_params=env_params,
-        batch_size=trainer_params["batch_size"],
-        device=device,
-    )
+    # train_data, val_data, test_data = get_train_val_test_data(
+    #     data_params=data_params,
+    #     env_params=env_params,
+    #     batch_size=trainer_params["batch_size"],
+    #     device=device,
+    # )
+    # import ipdb; ipdb.set_trace()
+    train_data, val_data = get_train_val_test_data_imagenet1k(data_params=data_params,
+                                                              env_params=env_params,
+                                                              batch_size=trainer_params["batch_size"],
+                                                              device=device)
 
     # MODEL
     model = TransformerSeq(

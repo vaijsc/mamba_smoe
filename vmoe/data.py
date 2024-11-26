@@ -6,16 +6,16 @@ import tqdm
 from timm.data import ImageDataset, create_dataset, create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 from timm.models import create_model, safe_model_name, resume_checkpoint, load_checkpoint, model_parameters
 from timm import utils
-from timm.loss import JsdCrossEntropy, BinaryCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy,\
-    LabelSmoothingCrossEntropy
+# from timm.loss import JsdCrossEntropy, BinaryCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy,\
+    # LabelSmoothingCrossEntropy
 from timm.optim import create_optimizer_v2, optimizer_kwargs
 from timm.scheduler import *
 from timm.utils import ApexScaler, NativeScaler
 from scheduler.scheduler_factory import create_scheduler
 import shutil
-from utils.datasets import imagenet_lmdb_dataset
+# from utils.datasets import imagenet_lmdb_dataset
 from tensorboard import TensorboardLogger
-
+# 0.6.12
 def _tokenize(text_path, dictionary_to_update):
     """Tokenizes a text file."""
     print("Tokenizing {}".format(text_path))
@@ -112,90 +112,85 @@ def _get_train_val_test_data(corpus, batch_size):
         _batchify(corpus.test, batch_size),
     ]
 
+from torchvision import transforms
+from torch.utils.data import DataLoader, DistributedSampler, RandomSampler, SequentialSampler
+import os
 
-def get_train_val_test_data(data_params, env_params, batch_size, device):
-    corpus = _build_corpus(**data_params, env_params=env_params)
-    data_params["vocab_size"] = corpus.vocab_size
-    train_data, val_data, test_data = _get_train_val_test_data(
-        corpus=corpus, batch_size=batch_size
-    )
-
-    if env_params["distributed"]:
-        # split the data into equal parts
-        assert batch_size % env_params["world_size"] == 0
-        device_batch_size = batch_size // env_params["world_size"]
-        slice_data = slice(
-            device_batch_size * env_params["rank"],
-            device_batch_size * (env_params["rank"] + 1),
-        )
-        train_data = train_data[slice_data]
-        val_data = val_data[slice_data]
-        test_data = test_data[slice_data]
-
-    train_data = train_data.to(device)
-    val_data = val_data.to(device)
-    test_data = test_data.to(device)
+def get_train_val_test_data_imagenet1k(data_params, env_params, batch_size, device):
     """
-    ipdb> train_data.shape
-    torch.Size([16, 6451688])
-    ipdb> val_data.shape
-    torch.Size([16, 13602])
-    ipdb> test_data.shape
-    torch.Size([16, 15348])
+    Configure ImageNet1k data with preprocessing and loaders.
     """
-    # import ipdb; ipdb.set_trace()
-    return train_data, val_data, test_data
+    data_config = {
+        "input_size": data_params.get("input_size", (3, 224, 224)),
+        "mean": data_params.get("mean", [0.485, 0.456, 0.406]),
+        "std": data_params.get("std", [0.229, 0.224, 0.225]),
+        "crop_pct": data_params.get("crop_pct", 0.875),
+    }
 
-def get_vision_data(dataset, data_dir, batch_size):
-    dataset_train = create_dataset(
-            dataset, root=data_dir + os.path.join('/train'), 
-            is_training=True, batch_size=batch_size)
+    # Preprocessing transformations for training and validation
+    train_transforms = transforms.Compose([
+        transforms.RandomResizedCrop(data_config["input_size"][1], scale=(0.08, 1.0)),  # Random crop
+        transforms.RandomHorizontalFlip(),  # Random horizontal flip
+        transforms.ToTensor(),  # Convert to tensor
+        transforms.Normalize(mean=data_config["mean"], std=data_config["std"]),  # Normalize
+    ])
 
-    dataset_eval = create_dataset(
-            dataset, root=data_dir + os.path.join('/val'), 
-            is_training=False, batch_size=batch_size)
-    loader_train = create_loader(
-        dataset_train,
-        input_size=[3,224,224],
-        batch_size=batch_size,
+    val_transforms = transforms.Compose([
+        transforms.Resize(int(data_config["input_size"][1] / data_config["crop_pct"])),  # Resize keeping aspect ratio
+        transforms.CenterCrop(data_config["input_size"][1]),  # Center crop to input size
+        transforms.ToTensor(),  # Convert to tensor
+        transforms.Normalize(mean=data_config["mean"], std=data_config["std"]),  # Normalize
+    ])
+
+    # Define dataset paths
+    train_root = os.path.join(data_params["data_dir"], "train")
+    val_root = os.path.join(data_params["data_dir"], "val")
+
+    # Create datasets with transformations applied
+    train_dataset = create_dataset(
+        name=data_params["data_name"],
+        root=train_root,
+        split="train",
         is_training=True,
-        use_prefetcher=True,
-        no_aug=False,
-        re_prob=0.25,
-        re_mode='pixel',
-        re_count=1,
-        re_split=False,
-        scale=[0.08, 1.0],
-        ratio=[0.75, 4/3],
-        hflip=0.5,
-        vflip=0.0,
-        color_jitter=0.4,
-        auto_augment="rand-m9-mstd0.5-inc1",
-        num_aug_repeats=0,
-        num_aug_splits=0,
-        # interpolation=train_interpolation,
-        mean=(0.485, 0.456, 0.406),
-        std=data_config['std'],
-        num_workers=args.workers,
-        distributed=args.distributed,
-        collate_fn=collate_fn,
-        pin_memory=args.pin_mem,
-        use_multi_epochs_loader=args.use_multi_epochs_loader,
-        worker_seeding=args.worker_seeding,
+        transform=train_transforms  # Apply training transforms
     )
-    loader_eval = create_loader(
-        dataset_eval,
-        input_size=[3,224,224],
-        batch_size=batch_size,
+    val_dataset = create_dataset(
+        name=data_params["data_name"],
+        root=val_root,
+        split="val",
         is_training=False,
-        use_prefetcher=args.prefetcher,
-        interpolation=data_config['interpolation'],
-        mean=data_config['mean'],
-        std=data_config['std'],
-        num_workers=args.workers,
-        distributed=args.distributed,
-        crop_pct=data_config['crop_pct'],
-        pin_memory=args.pin_mem,
+        transform=val_transforms  # Apply validation transforms
     )
 
-    
+    # Configure samplers
+    if env_params["distributed"]:
+        world_size = env_params["world_size"]
+        rank = env_params["rank"]
+        train_sampler = DistributedSampler(
+            train_dataset, num_replicas=world_size, rank=rank, shuffle=True
+        )
+        val_sampler = DistributedSampler(
+            val_dataset, num_replicas=world_size, rank=rank, shuffle=False
+        )
+    else:
+        train_sampler = RandomSampler(train_dataset)
+        val_sampler = SequentialSampler(val_dataset)
+
+    # Initialize data loaders with preprocessing
+    train_loader = DataLoader(
+        dataset=train_dataset,
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=data_params.get("num_workers", 4),
+        pin_memory=True,
+        drop_last=True,
+    )
+    val_loader = DataLoader(
+        dataset=val_dataset,
+        batch_size=batch_size,
+        sampler=val_sampler,
+        num_workers=data_params.get("num_workers", 4),
+        pin_memory=True,
+    )
+    # import ipdb; ipdb.set_trace()
+    return train_loader, val_loader

@@ -71,6 +71,7 @@ def _parse_args(params_config, args):
 
 def get_params(params_config, args=None):
     namespace = _parse_args(params_config, args)
+    # import ipdb; ipdb.set_trace()
     return {
         params_category: {
             param_config["dest"]: namespace.__getattribute__(param_config["dest"])

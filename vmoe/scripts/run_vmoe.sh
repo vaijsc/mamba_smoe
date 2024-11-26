@@ -3,7 +3,7 @@ export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export PYTHONPATH="/home/ubuntu/workspace/MomentumSMoE"
 
 args="
---data /home/ubuntu/workspace/dataset/wikitext-103 \
+--data_dir /home/ubuntu/workspace/dataset/imagenet1K \
 --base_arch transformer \
 --architecture sgsgsg \
 --gate_name smoe \
@@ -23,7 +23,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/ubuntu/workspace/MomentumSMoE/vmoe/result/vmoe.pt
+--checkpoint /home/ubuntu/workspace/MomentumSMoE/vmoe/result/vmoe.pt \
 "
 
 echo "Training ..."

@@ -22,20 +22,26 @@ PARAMS_CONFIG = {
             "help": "used in distributed training",
             "dest": "local_rank",
         },
+        
     },
     # data-specific
     "data_params": {
-        "--data": {
-            "type": str,
-            "default": "data/text8",
-            "help": "data location " "(must contain train.txt, valid.txt and test.txt)",
-            "dest": "data_path",
-        },
         "--data_name": {
             "type": str,
-            "default": "wikitext-103", # change name of dataset if neccesary
+            "default": "ImageNet1K", # change name of dataset if neccesary
             "help": "The name of dataset",
             "dest": "data_name",
+        },
+        "--data_dir": {
+            "type": str,
+            "default": "",
+            "help": "path to dataset",
+            "dest": "data_dir",
+        },
+        "--num_workers": {
+            "type": int, 
+            "default": 24,
+            "dest": "num_workers",
         },
     },
     # model-specific
