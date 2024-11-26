@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=smoe_m_clean
+#SBATCH --job-name=2csmoe_m
 #SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m_err.txt
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m.txt
 #SBATCH --nodes=1
