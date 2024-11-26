@@ -44,6 +44,7 @@ args="
 --checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/1cglam_m.pt \
 "
 
+# 48 -> 16
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1,2,3' 
 python -m torch.distributed.launch --master_port 10014 --nproc_per_node=1 --use_env train.py $args
