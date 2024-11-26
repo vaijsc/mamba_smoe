@@ -3,3 +3,4 @@ result/
 experiments/
 __pycache__/
 vmoe/result 
+vmoe/__pycache__

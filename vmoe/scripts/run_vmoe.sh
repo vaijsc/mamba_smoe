@@ -1,5 +1,6 @@
 export CUDA_VISIBLE_DEVICES=2
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
+export PYTHONPATH="/home/ubuntu/workspace/MomentumSMoE"
 
 args="
 --data /home/ubuntu/workspace/dataset/wikitext-103 \
@@ -18,15 +19,15 @@ args="
 --lr 0.0007 \
 --lr-warmup 3000 \
 --niter 60 \
---batch-sz 96 \
+--batch-sz 16 \
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/ubuntu/workspace/MomentumSMoE/vmoe/result/smoe.pt
+--checkpoint /home/ubuntu/workspace/MomentumSMoE/vmoe/result/vmoe.pt
 "
 
 echo "Training ..."
-python -m torch.distributed.launch --master_port 10013 --nproc_per_node=1 --use_env train_1.py $args
+python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env vmoe/train.py $args
 
 echo "Evaluation ..."
-python -m torch.distributed.launch --master_port 10013 --nproc_per_node=1 --use_env train_1.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env vmoe/train.py $args --resume --full-eval-mode
