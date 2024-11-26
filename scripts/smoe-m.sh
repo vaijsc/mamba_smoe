@@ -38,7 +38,7 @@ args="
 --lr-warmup 4000 \
 --niter 80 \
 --batch-sz 24 \
---batch-split 2 \
+--batch-split 4 \
 --nbatches 1000 \
 --distributed \
 --checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_m_clean.pt \
