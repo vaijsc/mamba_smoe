@@ -18,7 +18,6 @@ echo "Current path is $PATH"
 echo "Running"
 # nvidia-smi
 echo $CUDA_VISIBLE_DEVICES
-# mkdir -p /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints
 
 
 args="
