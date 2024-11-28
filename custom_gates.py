@@ -44,9 +44,12 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.loss = loss
 
     def forward(self, inp, return_all_scores=False):
-
+        # import ipdb; ipdb.set_trace()
         gate = self.gate(inp)
-
+        """
+        ipdb> self.gate(inp).shape
+        torch.Size([2048, 16])      
+        """
         if self.dense_moe_flag:
             gate = torch.ones_like(gate)  # average the importance of all experts
             gate_top_k_val, gate_top_k_idx = torch.topk(
@@ -56,15 +59,22 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         else:
             gate_top_k_val, gate_top_k_idx = torch.topk(
                 gate, k=self.top_k, dim=-1, largest=True, sorted=False
-            )  # [.. x top_k]
+            )  # [.. x top_k] 
             gate_top_k_val = gate_top_k_val.view(-1, self.top_k)  # (BxL) x 1 x top_k
-
+        """
+        ipdb> gate_top_k_val.shape
+        torch.Size([2048, 2])
+        ipdb> gate_top_k_idx.shape
+        torch.Size([2048, 2])
+        """
+        
         gate_score = F.softmax(gate_top_k_val, dim=-1)
         if self.g_blance:
             self.set_load_balance(gate, gate_top_k_idx)
 
         if return_all_scores:
             return gate_top_k_idx, gate_score, gate
+        ### modify
         return gate_top_k_idx, gate_score
 
 

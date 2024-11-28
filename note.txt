@@ -104,3 +104,39 @@ out torch.Size([2048, 267735])
 
 # thay đổi moe_top_k = 1 -> thay đổi ở config
 self.arch 'sgsgsg'
+
+"""
+ipdb> moe_inp.shape
+torch.Size([2048, 128])
+"""
+
+** configuration of smoe
+input shape torch.Size([2048, 128]) <- 8 * 256, 128
+self.num_expert = 16
+self.d_model = 128
+self.world_size = 1
+ipdb> self.experts
+_Expert(
+  (htoh4): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
+  (h4toh): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
+  (activation): Sequential(
+    (0): ReLU()
+    (1): Dropout(p=0.7, inplace=False)
+  )
+)
+self.experts_fused = True
+self.gate = CustomNaiveGate_Balance_SMoE(
+  (gate): Linear(in_features=128, out_features=16, bias=True)
+)
+ipdb> print(self.gate_hook)
+None
+ipdb> print(self.mask)
+None
+ipdb> print(self.mask_dict)
+None
+ipdb> print(self.moe_group)
+None
+ipdb> moe_inp_batch_size
+[2048]
+ipdb> self.slice_size
+1

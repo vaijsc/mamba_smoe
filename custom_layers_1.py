@@ -185,8 +185,6 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        self.lin_gate = nn.Linear(128, 128)
-        self.norm = nn.LayerNorm(128) 
 
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
@@ -344,28 +342,7 @@ class FMoE(nn.Module):
             dim = tensor.shape[-1]
             tensor = torch.bmm(gate_score, tensor).reshape(-1, dim)
             return tensor
-        """
-        moe_outp
-        ipdb> moe_outp.shape
-        torch.Size([2048, 2, 128])
-        """
         moe_outp = tree.map_structure(bmm_func, moe_outp)
-        # import ipdb; ipdb.set_trace()
-        ################################################### MODIFY ################################################
-        moe_inp_view = moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1))
-        # moe_inp_mean = moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1)).mean(dim=2)
-        moe_inp_view = self.norm(moe_inp_view) # norm input
-        moe_inp_view = self.lin_gate(moe_inp_view) # linear projection
-        moe_inp_view = self.norm(moe_inp_view) # input normalization after linear projection, shape: torch.Size([8, 256, 128])
-        SA = torch.matmul(moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1)), moe_inp_view.transpose(1,2))
-        SA_triangle = torch.tril(SA)
-        moe_out = torch.matmul(SA_triangle, moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1)))
-        moe_out_mean = moe_out.mean(dim=2) # [8, 256]
-        moe_out_sum_batch = moe_out_mean.sum(dim=1)
-        moe_out_mean = moe_out_mean/moe_out_sum_batch.unsqueeze(dim=-1) # [8, 256]
-        moe_out_mean = moe_out_mean.flatten().unsqueeze(dim=1)
-        ###########################################################################################################
-        moe_outp = moe_outp * moe_out_mean
         """
         ipdb> moe_outp.shape
         torch.Size([2048, 2, 128])
@@ -380,19 +357,13 @@ class FMoE(nn.Module):
                 )
 
             moe_outp = tree.map_structure(all_gather_func, moe_outp)
-        # import ipdb; ipdb.set_trace()
+
         moe_outp_batch_size = tree.flatten(
             tree.map_structure(lambda tensor: tensor.shape[0], moe_outp)
-        ) # 8, 256, 
+        )
         assert all(
             [batch_size == moe_outp_batch_size[0] for batch_size in moe_outp_batch_size]
         ), "MoE outputs must have the same batch size"
-        """
-        ipdb> moe_outp_batch_size
-        [2048]        
-        ipdb> moe_outp.shape
-        torch.Size([2048, 128])
-        """
         return moe_outp
 
 

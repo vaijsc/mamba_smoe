@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=smoe_m_adam_clean
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_adam_clean_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/smoe_m_adam_clean.txt
+#SBATCH --job-name=2csmoe_ma
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_ma_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_ma.txt
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=1
-#SBATCH --nodelist=sdc2-hpc-dgx-a100-018
+#SBATCH --gpus-per-node=2
+#SBATCH --nodelist=sdc2-hpc-dgx-a100-016
 #SBATCH --mem-per-gpu=50G
 #SBATCH --cpus-per-gpu=24
 #SBATCH --partition=research
@@ -51,8 +51,8 @@ args="
 
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1,2,3' 
-python -m torch.distributed.launch --master_port 10015 --nproc_per_node=1 --use_env train.py $args
+python -m torch.distributed.launch --master_port 10015 --nproc_per_node=2 --use_env train.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1,2,3' 
-python -m torch.distributed.launch --master_port 10015 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10015 --nproc_per_node=2 --use_env train.py $args --resume --full-eval-mode
