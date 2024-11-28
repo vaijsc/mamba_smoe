@@ -4,9 +4,9 @@
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_m.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
-#SBATCH --nodelist=sdc2-hpc-dgx-a100-016
+#SBATCH --nodelist=sdc2-hpc-dgx-a100-018
 #SBATCH --mem-per-gpu=50G
-#SBATCH --cpus-per-gpu=4
+#SBATCH --cpus-per-gpu=10
 #SBATCH --partition=research
 #SBATCH --mail-type=all
 #SBATCH --mail-user=v.AnhND81@vinai.io
