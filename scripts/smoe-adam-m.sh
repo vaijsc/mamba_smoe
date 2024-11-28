@@ -18,7 +18,6 @@ echo "Current path is $PATH"
 echo "Running"
 # nvidia-smi
 echo $CUDA_VISIBLE_DEVICES
-# mkdir -p /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints
 
 args="
 --data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/ \
@@ -46,7 +45,7 @@ args="
 --mu 0.7 \
 --beta1 0.9 \
 --beta2 0.999 \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/smoe_m_adam_clean.pt \
+--checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_ma.pt \
 "
 
 echo "Training ..."
