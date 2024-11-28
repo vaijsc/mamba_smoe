@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=4
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
 eval "$(conda shell.bash hook)"
@@ -36,9 +36,9 @@ args="
 #block_sz: shape of input
 echo "Training ..."
 #CUDA_VISIBLE_DEVICES='0,1,2,3'
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_1.py $args #\
+python -m torch.distributed.launch --master_port 10012 --nproc_per_node=1 --use_env train_1.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
 echo "Evaluation ..."
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_1.py $args --resume --full-eval-mode #\ 
+python -m torch.distributed.launch --master_port 10012 --nproc_per_node=1 --use_env train_1.py $args --resume --full-eval-mode #\ 
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
