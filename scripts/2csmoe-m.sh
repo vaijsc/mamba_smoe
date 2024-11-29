@@ -20,7 +20,7 @@ echo "Running"
 echo $CUDA_VISIBLE_DEVICES
 
 args="
---data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/ \
+--data /lustre/scratch/client/vinai/users/phinh2/workspace/dataset/wikitext-103 \
 --base_arch transformer \
 --architecture sgsgsgsgsgsg \
 --gate_name smoe \
