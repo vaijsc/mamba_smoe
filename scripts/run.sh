@@ -29,7 +29,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_3.pt
+--checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt
 "
 
 #--checkpoint /path/to/checkpoint/directory/smoe.pt \

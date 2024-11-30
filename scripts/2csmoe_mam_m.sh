@@ -6,7 +6,7 @@
 #SBATCH --gpus-per-node=2
 #SBATCH --nodelist=sdc2-hpc-dgx-a100-015
 #SBATCH --mem-per-gpu=50G
-#SBATCH --cpus-per-gpu=14
+#SBATCH --cpus-per-gpu=2
 #SBATCH --partition=research
 #SBATCH --mail-type=all
 #SBATCH --mail-user=v.AnhND81@vinai.io
@@ -46,8 +46,8 @@ args="
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10010 --nproc_per_node=2 --use_env train_p.py $args
+python -m torch.distributed.launch --master_port 10015 --nproc_per_node=2 --use_env train_p.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10010 --nproc_per_node=2 --use_env train_p.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10015 --nproc_per_node=2 --use_env train_p.py $args --resume --full-eval-mode

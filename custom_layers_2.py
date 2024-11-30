@@ -358,7 +358,7 @@ class FMoE(nn.Module):
         torch.Size([2048, 1, 2])
         """
         # import ipdb; ipdb.set_trace()
-        # moe_outp = moe_outp * moe_inp
+        moe_outp = moe_outp * moe_inp
         moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Permute for compatibility with matmul
