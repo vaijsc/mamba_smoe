@@ -296,7 +296,7 @@ class FMoE(nn.Module):
             self.world_size,
             experts=self.experts,
         )
-        
+
         # recover deleted tensors
         if self.mask is not None and self.mask_dict is not None:
 
@@ -323,7 +323,7 @@ class FMoE(nn.Module):
             """
             moe_outp = tree.map_structure(recover_func, fwd)
         else:
-            
+
             def view_func(tensor):
                 dim = tensor.shape[-1]
                 tensor = tensor.view(-1, self.top_k, dim)
@@ -350,28 +350,28 @@ class FMoE(nn.Module):
         torch.Size([2048, 2, 128])
         """
         moe_outp = tree.map_structure(bmm_func, moe_outp)
+        # import ipdb; ipdb.set_trace()
         ################################################### MODIFY ################################################
+        # moe_inp_view = moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1))
+        # # moe_inp_mean = moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1)).mean(dim=2)
+        # moe_inp_view = self.norm(moe_inp_view) # norm input
+        # moe_inp_view = self.lin_gate(moe_inp_view) # linear projection
+        # moe_inp_view = self.norm(moe_inp_view) # input normalization after linear projection, shape: torch.Size([8, 256, 128])
+        # SA = torch.matmul(moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1)), moe_inp_view.transpose(1,2))
+        # SA_triangle = torch.tril(SA)
+        # moe_out = torch.matmul(SA_triangle, moe_inp.reshape(moe_inp.size(0)//256, 256, moe_inp.size(1)))
+        # moe_out_mean = moe_out.mean(dim=2) # [8, 256]
+        # moe_out_sum_batch = moe_out_mean.sum(dim=1)
+        # moe_out_mean = moe_out_mean/moe_out_sum_batch.unsqueeze(dim=-1) # [8, 256]
+        # moe_out_mean = moe_out_mean.flatten().unsqueeze(dim=1)
+        # ###########################################################################################################
+        # moe_outp = moe_outp * moe_out_mean
         """
         ipdb> moe_outp.shape
         torch.Size([2048, 2, 128])
         ipdb> gate_score.shape  
         torch.Size([2048, 1, 2])
         """
-        # import ipdb; ipdb.set_trace()
-        moe_outp = moe_outp * moe_inp
-        # moe_outp = moe_outp  # [scale via dimension]
-        # moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
-        # # moe_outp = moe_outp.view(moe_outp.size(0), -1)
-        # moe_view = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1)) # [8, 256, 128]
-        # moe_attn = torch.matmul(moe_view, moe_view.transpose(1,2)) # [8, 256, 256]
-        # moe_similarity = torch.tril(moe_attn) # [8, 256, 256]
-        # # Initialize output tensor
-        # moe_out = torch.zeros(8, 256, 128, device=moe_outp.device)  # Ensure moe_out is on the correct device
-        # for k in range (moe_outp.size(0)):
-        #     for i in range (moe_outp.size(1)):
-        #         for j in range (i+1):
-        #             moe_out[k][i] += moe_similarity[k][i][j] * moe_outp[k][j]
-        # moe_outp = moe_out.view(-1, moe_out.size(2))
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
