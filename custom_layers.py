@@ -8,7 +8,7 @@ from custom_functions import prepare_forward, ensure_comm
 from custom_functions import MOEScatter, MOEGather
 from custom_functions import AllGather, Slice
 from gates import NaiveGate
-
+import torch.nn.functional as F
 from fastermoe.config import switch_from_env
 
 
@@ -185,8 +185,8 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        self.lin_gate = nn.Linear(128, 128)
-        self.norm = nn.LayerNorm(128) 
+        # self.lin_gate = nn.Linear(128, 128)
+        # self.norm = nn.LayerNorm(128) 
 
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
@@ -359,19 +359,22 @@ class FMoE(nn.Module):
         """
         # import ipdb; ipdb.set_trace()
         moe_outp = moe_outp * moe_inp
-        # moe_outp = moe_outp  # [scale via dimension]
-        # moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
-        # # moe_outp = moe_outp.view(moe_outp.size(0), -1)
-        # moe_view = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1)) # [8, 256, 128]
-        # moe_attn = torch.matmul(moe_view, moe_view.transpose(1,2)) # [8, 256, 256]
-        # moe_similarity = torch.tril(moe_attn) # [8, 256, 256]
-        # # Initialize output tensor
-        # moe_out = torch.zeros(8, 256, 128, device=moe_outp.device)  # Ensure moe_out is on the correct device
-        # for k in range (moe_outp.size(0)):
-        #     for i in range (moe_outp.size(1)):
-        #         for j in range (i+1):
-        #             moe_out[k][i] += moe_similarity[k][i][j] * moe_outp[k][j]
-        # moe_outp = moe_out.view(-1, moe_out.size(2))
+        moe_view = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
+        moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
+        # Permute for compatibility with matmul
+        similarity_matrix = torch.matmul(moe_view, moe_view.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        # Step 2: Apply causal mask
+        seq_length = moe_view.size(1)
+        causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_view.device)).unsqueeze(0)  # [1, seq_length, seq_length]
+        similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
+
+        # Step 3: Normalize similarities using softmax
+        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
+
+        # Step 4: Compute weighted sum of previous tokens
+        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
+        moe_outp = moe_outp.view(-1, moe_outp.size(2))
+        
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
