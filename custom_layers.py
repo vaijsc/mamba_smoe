@@ -359,13 +359,13 @@ class FMoE(nn.Module):
         """
         # import ipdb; ipdb.set_trace()
         moe_outp = moe_outp * moe_inp
-        moe_view = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
+        moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Permute for compatibility with matmul
-        similarity_matrix = torch.matmul(moe_view, moe_view.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # Step 2: Apply causal mask
-        seq_length = moe_view.size(1)
-        causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_view.device)).unsqueeze(0)  # [1, seq_length, seq_length]
+        seq_length = moe_inp.size(1)
+        causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
         similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
 
         # Step 3: Normalize similarities using softmax
