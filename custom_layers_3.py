@@ -373,10 +373,10 @@ class FMoE(nn.Module):
         # moe_inp = moe_inp/l2_norm
         # Normalize along the sequence dimension (axis=1)
         mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
-        std = moe_inp.std(dim=1, keepdim=True)    # Standard deviation along the sequence dimension
+        std = moe_inp.std(dim=1, keepdim=True) + 1e-8   # Standard deviation along the sequence dimension
 
         # Avoid division by zero
-        std[std == 0] = 1
+        # std[std == 0] = 1
 
         # Normalize the input
         moe_inp = (moe_inp - mean) / std
