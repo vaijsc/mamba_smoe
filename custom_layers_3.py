@@ -368,6 +368,7 @@ class FMoE(nn.Module):
         # causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
         # similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
         # Step 3: Normalize similarities using L2 normalization
+        import ipdb; ipdb.set_trace()
         normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
         # Step 4: Compute weighted sum of previous tokens
         moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
