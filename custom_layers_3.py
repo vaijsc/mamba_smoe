@@ -370,14 +370,12 @@ class FMoE(nn.Module):
 
         # seq_length = similarity_matrix.size(-1)
         chunk_size = 128  # Adjust this based on available memory
-        normalized_similarity = []
-        temperature = 0.5  # Adjust the temperature as needed
+        normalized_similarity = torch.zeros_like(similarity_matrix)
         for i in range(0, seq_length, chunk_size):
             chunk = similarity_matrix[:, :, i:i+chunk_size]
-            normalized_chunk = F.softmax(chunk / temperature, dim=-1)
-            normalized_similarity.append(normalized_chunk)
+            chunk_norm = chunk.norm(p=2, dim=-1, keepdim=True) + 1e-8  # Avoid division by zero
+            normalized_similarity[:, i:min(i + chunk_size, seq_length), :] = chunk / chunk_norm
 
-        normalized_similarity = torch.cat(normalized_similarity, dim=-1)
         # Step 3: Normalize similarities using softmax
         # temperature = 0.5  # Adjust the temperature as needed
         # normalized_similarity = F.softmax(similarity_matrix / temperature, dim=-1)
