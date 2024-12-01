@@ -367,25 +367,13 @@ class FMoE(nn.Module):
         ipdb> moe_outp.shape
         torch.Size([2048, 128])
         """
+        batch_size = moe_inp.size(0)//256
         moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
-        # Chunk processing to avoid memory overload
-        chunk_size = 64  # Number of sequences to process at a time
-        output_chunks = []
-        batch_size = 8
-        for i in range(0, 8, chunk_size):
-            # Select a chunk of the data
-            inp_chunk = moe_inp[i:i + chunk_size]
-            outp_chunk = moe_outp[i:i + chunk_size]
-            
-            # Perform element-wise multiplication
-            chunk_result = inp_chunk * outp_chunk
-            
-            # Store the result
-            output_chunks.append(chunk_result)
+        # Process in-place and directly overwrite results
+        for i in range(batch_size):
+            moe_outp[i] *= moe_inp[i]  # Element-wise multiplication for one batch sequence at a time
 
-        # Concatenate all processed chunks back together
-        moe_outp = torch.cat(output_chunks, dim=0)
         # Normalize along the sequence dimension (axis=1)
         mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
         std = moe_inp.std(dim=1, keepdim=True) + 1e-8   # Standard deviation along the sequence dimension
