@@ -358,7 +358,7 @@ class FMoE(nn.Module):
         torch.Size([2048, 1, 2])
         """
         # import ipdb; ipdb.set_trace()
-        # moe_outp = moe_outp * moe_inp
+        moe_outp = moe_outp * moe_inp
         moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Permute for compatibility with matmul
@@ -368,8 +368,10 @@ class FMoE(nn.Module):
         causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
         similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
 
+        # Step 3: Normalize similarities using softmax
+        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
         # Step 3: Normalize similarities using L2 normalization
-        normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
+        # normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
         # Step 4: Compute weighted sum of previous tokens
         moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
