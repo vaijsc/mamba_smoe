@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=2csmoe_ml2
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m_maml2_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m_maml2.txt
+#SBATCH --job-name=2csmoe_mbell
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m_mambell_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m_mambell.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --nodelist=sdc2-hpc-dgx-a100-015
@@ -40,7 +40,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_maml2.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_mambell.pt \
 "
  
 # bs 48 -> 16 -> 32
