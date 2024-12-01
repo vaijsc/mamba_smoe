@@ -364,17 +364,28 @@ class FMoE(nn.Module):
         # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # Step 2: Apply causal mask
-        seq_length = moe_inp.size(1)
+        # seq_length = moe_inp.size(1)
+        _, seq_length, _ = similarity_matrix.shape
         causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
         similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
 
         # seq_length = similarity_matrix.size(-1)
         chunk_size = 128  # Adjust this based on available memory
         normalized_similarity = torch.zeros_like(similarity_matrix)
-        for i in range(0, seq_length, chunk_size):
-            chunk = similarity_matrix[:, :, i:i+chunk_size]
-            chunk_norm = chunk.norm(p=2, dim=-1, keepdim=True) + 1e-8  # Avoid division by zero
-            normalized_similarity[:, i:min(i + chunk_size, seq_length), :] = chunk / chunk_norm
+        # for i in range(0, seq_length, chunk_size):
+        #     chunk = similarity_matrix[:, :, i:i+chunk_size]
+        #     chunk_norm = chunk.norm(p=2, dim=-1, keepdim=True) + 1e-8  # Avoid division by zero
+        #     normalized_similarity[:, i:min(i + chunk_size, seq_length), :] = chunk / chunk_norm
+
+        for start in range(0, seq_length, chunk_size):
+            end = min(start + chunk_size, seq_length)
+            chunk = similarity_matrix[:, start:end, :]  # [batch_size, chunk_size, seq_length]
+
+            # Compute L2 norm row-wise for the current chunk
+            chunk_norm = chunk.norm(p=2, dim=-1, keepdim=True)  # [batch_size, chunk_size, 1]
+            
+            # Normalize the chunk
+            normalized_similarity[:, start:end, :] = chunk / (chunk_norm + 1e-8)  # [batch_size, chunk_size, seq_length]
 
         # Step 3: Normalize similarities using softmax
         # temperature = 0.5  # Adjust the temperature as needed
