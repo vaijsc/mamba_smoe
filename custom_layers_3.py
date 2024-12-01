@@ -363,14 +363,14 @@ class FMoE(nn.Module):
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
-        # Step 2: Apply causal mask
-        seq_length = moe_inp.size(1)
-        causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
-        similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
+        import ipdb; ipdb.set_trace()
+        similarity_matrix = torch.tril(similarity_matrix)
+        # causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
+        # similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
         # Step 3: Normalize similarities using L2 normalization
-        # normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
+        normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
         # Step 4: Compute weighted sum of previous tokens
-        moe_outp = torch.matmul(similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8), moe_outp)  # [batch_size, seq_length, dim]        
+        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
         
         if self.slice_size > 1:
