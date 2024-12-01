@@ -369,9 +369,9 @@ class FMoE(nn.Module):
         similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
 
         # Step 3: Normalize similarities using softmax
-        # normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
+        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
         # Step 3: Normalize similarities using L2 normalization
-        normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
+        # normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
         # Step 4: Compute weighted sum of previous tokens
         moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
