@@ -364,7 +364,7 @@ class FMoE(nn.Module):
         # Chunk processing to avoid memory overload
         chunk_size = 64  # Number of sequences to process at a time
         output_chunks = []
-        batch_size = 256
+        batch_size = 8
         for i in range(0, batch_size, chunk_size):
             # Select a chunk of the data
             inp_chunk = moe_inp[i:i + chunk_size]
