@@ -369,8 +369,10 @@ class FMoE(nn.Module):
         similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
 
         # Step 3: Normalize similarities using softmax
-        similarity_matrix /= similarity_matrix.size(-1)**0.5  # Scale by the square root of sequence length
-        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
+        temperature = 0.5  # Adjust the temperature as needed
+        normalized_similarity = F.softmax(similarity_matrix / temperature, dim=-1)
+        # similarity_matrix /= similarity_matrix.size(-1)**0.5  # Scale by the square root of sequence length
+        # normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
         # Step 3: Normalize similarities using L2 normalization
         normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
         # Step 4: Compute weighted sum of previous tokens
