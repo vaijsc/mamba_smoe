@@ -357,37 +357,22 @@ class FMoE(nn.Module):
         ipdb> gate_score.shape  
         torch.Size([2048, 1, 2])
         """
-        # Assuming moe_inp and moe_outp are already defined
+        # import ipdb; ipdb.set_trace()
         # moe_outp = moe_outp * moe_inp
-        moe_inp = moe_inp.view(moe_inp.size(0) // 256, 256, moe_inp.size(1))
-        moe_outp = moe_outp.view(moe_outp.size(0) // 256, 256, moe_outp.size(1))
+        moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
+        moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
+        # Permute for compatibility with matmul
+        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        # Step 2: Apply causal mask
+        seq_length = moe_inp.size(1)
+        causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
+        similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
 
-        # Reduce memory usage by processing in chunks
-        batch_size, seq_length, dim = moe_inp.size()
-        chunk_size = 64  # Process smaller chunks to reduce memory usage
+        # Step 3: Normalize similarities using softmax
+        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
 
-        moe_outp_chunks = []
-        for i in range(0, batch_size, chunk_size):
-            # Process a chunk of data
-            moe_inp_chunk = moe_inp[i:i + chunk_size]
-            moe_outp_chunk = moe_outp[i:i + chunk_size]
-
-            # Compute similarity matrix
-            similarity_matrix = torch.matmul(moe_inp_chunk, moe_inp_chunk.transpose(1, 2))
-
-            # Apply causal mask
-            causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)
-            similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
-
-            # Normalize similarities using softmax
-            normalized_similarity = F.softmax(similarity_matrix, dim=-1)
-
-            # Compute weighted sum of previous tokens
-            moe_outp_processed_chunk = torch.matmul(normalized_similarity, moe_outp_chunk)
-            moe_outp_chunks.append(moe_outp_processed_chunk)
-
-        # Concatenate chunks back together
-        moe_outp = torch.cat(moe_outp_chunks, dim=0)
+        # Step 4: Compute weighted sum of previous tokens
+        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
         
         if self.slice_size > 1:
