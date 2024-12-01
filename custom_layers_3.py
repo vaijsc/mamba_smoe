@@ -368,9 +368,18 @@ class FMoE(nn.Module):
         torch.Size([2048, 128])
         """
         moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
-        l2_norm = torch.norm(moe_inp, p=2, dim=1, keepdim=True) + 1e-8  # L2 norm along axis=1
+        # l2_norm = torch.norm(moe_inp, p=2, dim=1, keepdim=True) + 1e-8  # L2 norm along axis=1
         # l2_norm[l2_norm == 0] = 1
-        moe_inp = moe_inp/l2_norm
+        # moe_inp = moe_inp/l2_norm
+        # Normalize along the sequence dimension (axis=1)
+        mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
+        std = moe_inp.std(dim=1, keepdim=True)    # Standard deviation along the sequence dimension
+
+        # Avoid division by zero
+        std[std == 0] = 1
+
+        # Normalize the input
+        moe_inp = (moe_inp - mean) / std
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
