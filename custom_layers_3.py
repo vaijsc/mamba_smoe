@@ -363,7 +363,7 @@ class FMoE(nn.Module):
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         similarity_matrix = torch.tril(similarity_matrix)
         # causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
         # similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
