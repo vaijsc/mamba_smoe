@@ -1,0 +1,12 @@
+=================== EPOCHS 0 ======================
+Epochs: 0 | loss_train: 7.940 ~ 2807.950 PPL | loss_val: 6.644 ~ 767.871 PPL | elapsed: 868.4
+=================== EPOCHS 1 ======================
+Epochs: 1 | loss_train: 5.906 ~ 367.243 PPL | loss_val: 5.595 ~ 269.045 PPL | elapsed: 861.4
+=================== EPOCHS 2 ======================
+Epochs: 2 | loss_train: 5.325 ~ 205.480 PPL | loss_val: 5.054 ~ 156.710 PPL | elapsed: 858.4
+=================== EPOCHS 3 ======================
+Epochs: 3 | loss_train: 4.928 ~ 138.136 PPL | loss_val: 4.699 ~ 109.785 PPL | elapsed: 857.7
+=================== EPOCHS 4 ======================
+Epochs: 4 | loss_train: 4.674 ~ 107.103 PPL | loss_val: 4.459 ~ 86.439 PPL | elapsed: 857.1
+=================== EPOCHS 5 ======================
+Epochs: 5 | loss_train: 4.479 ~ 88.154 PPL | loss_val: 4.310 ~ 74.440 PPL | elapsed: 857.5

@@ -1,0 +1,44 @@
+=================== EPOCHS 0 ======================
+Epochs: 0 | loss_train: 7.875 ~ 2630.541 PPL | loss_val: 6.596 ~ 732.235 PPL | elapsed: 865.7
+=================== EPOCHS 1 ======================
+Epochs: 1 | loss_train: 5.821 ~ 337.295 PPL | loss_val: 5.465 ~ 236.379 PPL | elapsed: 863.5
+=================== EPOCHS 2 ======================
+Epochs: 2 | loss_train: 5.244 ~ 189.454 PPL | loss_val: 4.959 ~ 142.443 PPL | elapsed: 863.0
+=================== EPOCHS 3 ======================
+Epochs: 3 | loss_train: 4.858 ~ 128.709 PPL | loss_val: 4.625 ~ 102.010 PPL | elapsed: 862.2
+=================== EPOCHS 4 ======================
+Epochs: 4 | loss_train: 4.609 ~ 100.384 PPL | loss_val: 4.387 ~ 80.376 PPL | elapsed: 859.8
+=================== EPOCHS 5 ======================
+Epochs: 5 | loss_train: 4.437 ~ 84.496 PPL | loss_val: 4.267 ~ 71.327 PPL | elapsed: 859.5
+=================== EPOCHS 6 ======================
+Epochs: 6 | loss_train: 4.340 ~ 76.709 PPL | loss_val: 4.164 ~ 64.308 PPL | elapsed: 859.8
+=================== EPOCHS 7 ======================
+Epochs: 7 | loss_train: 4.246 ~ 69.858 PPL | loss_val: 4.113 ~ 61.135 PPL | elapsed: 858.7
+=================== EPOCHS 8 ======================
+Epochs: 8 | loss_train: 4.168 ~ 64.613 PPL | loss_val: 4.034 ~ 56.463 PPL | elapsed: 858.6
+=================== EPOCHS 9 ======================
+Epochs: 9 | loss_train: 4.098 ~ 60.204 PPL | loss_val: 3.993 ~ 54.194 PPL | elapsed: 858.1
+=================== EPOCHS 10 ======================
+Epochs: 10 | loss_train: 4.055 ~ 57.657 PPL | loss_val: 3.931 ~ 50.954 PPL | elapsed: 858.2
+=================== EPOCHS 11 ======================
+Epochs: 11 | loss_train: 4.006 ~ 54.942 PPL | loss_val: 3.879 ~ 48.377 PPL | elapsed: 859.5
+=================== EPOCHS 12 ======================
+Epochs: 12 | loss_train: 3.960 ~ 52.458 PPL | loss_val: 3.855 ~ 47.247 PPL | elapsed: 858.3
+=================== EPOCHS 13 ======================
+Epochs: 13 | loss_train: 3.918 ~ 50.283 PPL | loss_val: 3.839 ~ 46.482 PPL | elapsed: 857.9
+=================== EPOCHS 14 ======================
+Epochs: 14 | loss_train: 3.908 ~ 49.812 PPL | loss_val: 3.836 ~ 46.333 PPL | elapsed: 859.4
+=================== EPOCHS 15 ======================
+Epochs: 15 | loss_train: 3.882 ~ 48.521 PPL | loss_val: 3.803 ~ 44.813 PPL | elapsed: 858.5
+=================== EPOCHS 16 ======================
+Epochs: 16 | loss_train: 3.854 ~ 47.172 PPL | loss_val: 3.765 ~ 43.181 PPL | elapsed: 859.2
+=================== EPOCHS 17 ======================
+Epochs: 17 | loss_train: 3.828 ~ 45.970 PPL | loss_val: 3.750 ~ 42.501 PPL | elapsed: 861.9
+=================== EPOCHS 18 ======================
+Epochs: 18 | loss_train: 3.818 ~ 45.503 PPL | loss_val: 3.749 ~ 42.468 PPL | elapsed: 861.5
+=================== EPOCHS 19 ======================
+Epochs: 19 | loss_train: 3.812 ~ 45.228 PPL | loss_val: 3.737 ~ 41.987 PPL | elapsed: 862.4
+=================== EPOCHS 20 ======================
+Epochs: 20 | loss_train: 3.785 ~ 44.057 PPL | loss_val: 3.732 ~ 41.774 PPL | elapsed: 863.1
+=================== EPOCHS 21 ======================
+Epochs: 21 | loss_train: 3.774 ~ 43.570 PPL | loss_val: 3.734 ~ 41.856 PPL | elapsed: 863.4

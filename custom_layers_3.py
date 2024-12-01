@@ -367,25 +367,10 @@ class FMoE(nn.Module):
         seq_length = moe_inp.size(1)
         causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
         similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
-
-        # seq_length = similarity_matrix.size(-1)
-        chunk_size = 64  # Adjust this based on available memory
-        normalized_similarity = []
-        temperature = 0.5  # Adjust the temperature as needed
-        for i in range(0, seq_length, chunk_size):
-            chunk = similarity_matrix[:, :, i:i+chunk_size]
-            normalized_chunk = F.softmax(chunk / temperature, dim=-1)
-            normalized_similarity.append(normalized_chunk)
-
-
+        
         normalized_similarity = torch.cat(normalized_similarity, dim=-1)
-        # Step 3: Normalize similarities using softmax
-        # temperature = 0.5  # Adjust the temperature as needed
-        # normalized_similarity = F.softmax(similarity_matrix / temperature, dim=-1)
-        # similarity_matrix /= similarity_matrix.size(-1)**0.5  # Scale by the square root of sequence length
-        # normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
         # Step 3: Normalize similarities using L2 normalization
-        # normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
+        normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
         # Step 4: Compute weighted sum of previous tokens
         moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
