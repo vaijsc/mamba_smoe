@@ -352,6 +352,8 @@ class FMoE(nn.Module):
         moe_outp = tree.map_structure(bmm_func, moe_outp)
         ################################################### MODIFY ################################################
         """
+        ipdb> moe_inp.shape
+        torch.Size([2048, 128])
         ipdb> moe_outp.shape
         torch.Size([2048, 2, 128])
         ipdb> gate_score.shape  
@@ -359,19 +361,22 @@ class FMoE(nn.Module):
         """
         # import ipdb; ipdb.set_trace()
         # moe_outp = moe_outp * moe_inp
+        """
+        ipdb> moe_inp.shape
+        torch.Size([2048, 128])
+        ipdb> moe_outp.shape
+        torch.Size([2048, 128])
+        """
         moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
+        l2_norm = torch.norm(moe_inp, p=2, dim=1, keepdim=True)  # L2 norm along axis=1
+        l2_norm[l2_norm == 0] = 1
+        moe_inp = moe_inp/l2_norm
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # import ipdb; ipdb.set_trace()
         similarity_matrix = torch.tril(similarity_matrix)
-        # causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
-        # similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
-        # Step 3: Normalize similarities using L2 normalization
-        import ipdb; ipdb.set_trace()
-        normalized_similarity = similarity_matrix / (similarity_matrix.norm(dim=-1, keepdim=True) + 1e-8)  # Add epsilon to prevent division by zero
-        # Step 4: Compute weighted sum of previous tokens
-        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
+        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # [batch_size, seq_length, dim]        
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
         
         if self.slice_size > 1:
