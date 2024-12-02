@@ -383,21 +383,26 @@ class FMoE(nn.Module):
         # Initialize moe_outp_accum for accumulation
         moe_outp_accum = torch.zeros_like(moe_outp)
 
-        # Block-wise computation for similarity_matrix and moe_outp update
-        block_size = 64  # Adjust based on GPU memory
-        for start in range(0, seq_length, block_size):
-            end = min(start + block_size, seq_length)
-            moe_inp_block = moe_inp_normalized[:, start:end, :]  # Extract block
+        # Process similarity matrix in smaller chunks
+        chunk_size = 32  # Adjust based on available GPU memory
+        for i in range(0, seq_length, chunk_size):
+            for j in range(0, seq_length, chunk_size):
+                # Compute similarity for current chunk
+                inp_chunk_i = moe_inp_normalized[:, i:i+chunk_size, :]
+                inp_chunk_j = moe_inp_normalized[:, j:j+chunk_size, :]
 
-            # Compute the similarity block
-            similarity_block = torch.matmul(moe_inp_block, moe_inp_normalized.transpose(1, 2))
-            similarity_block = torch.tril(similarity_block)  # Use lower triangular part
+                similarity_chunk = torch.matmul(inp_chunk_i, inp_chunk_j.transpose(1, 2))  # [batch_size, chunk_size, chunk_size]
 
-            # Update moe_outp for the current block
-            moe_outp_accum[:, start:end, :] = torch.matmul(similarity_block, moe_outp)
+                # Apply lower triangular mask for causal similarity
+                if i == j:
+                    mask = torch.tril(torch.ones_like(similarity_chunk))  # Lower triangular mask
+                    similarity_chunk *= mask
 
-        # Replace moe_outp with the accumulated result
-        moe_outp = moe_outp_accum.view(-1, dim)
+                # Update moe_outp for the current chunk
+                moe_outp_accum[:, i:i+chunk_size, :] += torch.matmul(similarity_chunk, moe_outp[:, j:j+chunk_size, :])
+
+            # Reshape moe_outp back to the original shape
+            moe_outp = moe_outp_accum.view(-1, dim)
 
 
         if self.slice_size > 1:
