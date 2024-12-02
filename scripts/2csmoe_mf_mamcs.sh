@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=2csmoe_mcs
+#SBATCH --job-name=2csmoe_mfcs
 #SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m_mamcs.txt
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_m_mamcs.txt
 #SBATCH --nodes=1
@@ -40,14 +40,14 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_mamcs.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_mf_mamcs.pt \
 "
  
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10018 --nproc_per_node=2 --use_env train_5.py $args
+python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train_6.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10018 --nproc_per_node=2 --use_env train_5.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train_6.py $args --resume --full-eval-mode
