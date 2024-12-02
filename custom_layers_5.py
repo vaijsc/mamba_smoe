@@ -10,6 +10,7 @@ from custom_functions import AllGather, Slice
 from gates import NaiveGate
 import torch.nn.functional as F
 from fastermoe.config import switch_from_env
+from torch.cuda.amp import autocast
 
 
 def mark_module_parallel_comm(module, comm):
@@ -375,22 +376,17 @@ class FMoE(nn.Module):
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
 
-        # # Element-wise multiplication
-        # moe_outp = moe_outp * moe_inp  # Element-wise multiplication (out-of-place)
+        
 
-        # Normalize moe_inp by L2 norm along the sequence dimension
-        l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
-        moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
+        with autocast():
+            # Normalize moe_inp and compute similarity
+            l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8
+            moe_inp_normalized = moe_inp / l2_norm
+            similarity_matrix = torch.matmul(moe_inp_normalized, moe_inp_normalized.transpose(1, 2))
+            similarity_matrix = torch.tril(similarity_matrix)
 
-        # Compute the similarity matrix
-        similarity_matrix = torch.matmul(moe_inp_normalized, moe_inp_normalized.transpose(1, 2))  # [batch_size, seq_length, seq_length]
-
-        # Use the lower triangular part of the similarity matrix
-        similarity_matrix = torch.tril(similarity_matrix)
-
-        # Update moe_outp using the similarity matrix
-        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # Out-of-place update
-
+            # Update moe_outp
+            moe_outp = torch.matmul(similarity_matrix, moe_outp)
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
         
