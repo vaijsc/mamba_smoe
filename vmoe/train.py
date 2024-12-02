@@ -7,10 +7,16 @@ import argparse
 import math, random
 import torch
 import time
-
+import torch
+import torch.nn as nn
+import math
+import datetime
+import time
+from torch.utils.data import DataLoader
 from vmoe.config import PARAMS_CONFIG
-from vmoe.data import get_train_val_data
-from vmoe.models import TransformerSeq
+from vmoe.data import get_train_val_data_imagenet1k
+# from vmoe.models import TransformerSeq
+from vmoe.models import TransformerVision
 from vmoe.trainer import train_iteration, full_eval
 import datetime
 import wandb
@@ -27,6 +33,13 @@ from utils import (
     set_freq_optimal_search,
 )
 
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Training")
+    parser.add_argument('--hid-sz', type=int, default=768, help="Hidden size")
+    # Add other arguments as needed
+    return parser.parse_args()
 
 def launch(
     env_params,
@@ -37,6 +50,7 @@ def launch(
     trainer_params,
     wandb_params,
 ):
+    args = parse_args()
     wandb_flag = wandb_params["wandb_flag"]
     if wandb_flag:
         wandb.init(project=wandb_params["project_name"])
@@ -56,35 +70,24 @@ def launch(
         print("optim_params:\t", optim_params)
         print("trainer_params:\t", trainer_params)
         print("adapt_span_params:\t", adapt_span_params)
-
-    # DATA
-    # train_data, val_data, test_data = get_train_val_test_data(
-    #     data_params=data_params,
-    #     env_params=env_params,
-    #     batch_size=trainer_params["batch_size"],
-    #     device=device,
-    # )
-    # import ipdb; ipdb.set_trace()
     
-    train_data, val_data = get_train_val_data(data_params['data_path'], 
-                                              batch_size=trainer_params['batch_size'],
+    train_loader, val_loader = get_train_val_data_imagenet1k(data_params, 
                                               env_params=env_params,
+                                              batch_size=trainer_params['batch_size'],
                                               device=device)
 
-    # MODEL
-    model = TransformerSeq(
-        vocab_size=data_params["vocab_size"],
-        **model_params,
-        adapt_span_params=adapt_span_params,
+    import ipdb; ipdb.set_trace()
+    # Model setup
+    model = TransformerVision(
+        hidden_size=model_params['hidden_size'],
+        nb_heads=model_params['nb_heads'],
+        num_classes=1000,  # ImageNet has 1000 classes
+        **model_params
     )
-    
-    # model = TransformerVision(
-    #     vocab_size=data_params["vocab_size"],
-    #     **model_params,
-    #     adapt_span_params=adapt_span_params,
-    # )
-    
+
     print(model)
+
+    # Distribute the model if necessary (DistributedDataParallel)
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)
@@ -98,34 +101,27 @@ def launch(
         model = torch.nn.DataParallel(model)
         model = model.to(device)
 
-    # OPTIMIZER AND SCHEDULER
-    # # import ipdb ipdb.set_trace()
+    # Optimizer and scheduler setup
     optimizer, scheduler = get_optimizer_and_scheduler(
         model=model, optim_params=optim_params
     )
 
-    # create logger
+    # Logger setup
     logger = Logger()
-    folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
+    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     logging = create_exp_dir(f"{folder_path}")
-    ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
     folder_path = "/".join(trainer_params["checkpoint_path"].split("/")[:-1])
     logging = create_exp_dir(f"{folder_path}/experiments/{fold_name}")
-    # log paramters
+
     logging(f"Training Parameters:\n {trainer_params}")
     logging(f"Models Parameters:\n {model_params}")
-    # logging time
-    current_time = datetime.datetime.now()
-    logging(str(current_time))
-    # log model
+    logging(str(datetime.datetime.now()))
     logging(str(model))
-    logging(f"Total of Parameters: {sum(p.numel() for p in model.parameters())}")
-    logging(
-        f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
-    )
-    # resume training from last checkpoint if exists
+    logging(f"Total Parameters: {sum(p.numel() for p in model.parameters())}")
+    logging(f"Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+
+    # Resume from checkpoint if applicable
     iter_init = load_checkpoint(
         trainer_params["checkpoint_path"],
         model,
@@ -135,124 +131,45 @@ def launch(
         distributed,
         resume,
     )
-    # fix gate
-    if model_params["smoe_dropout"]:
-        freeze_gate_weight(model)
-    # eval model
-    if trainer_params["full_eval_mode"]:
-        # evaluate the model on test data
-        with torch.no_grad():
-            loss_val = full_eval(
-                model,
-                optimizer,
-                scheduler,
-                val_data,
-                model_params["block_size"],
-                model_params["hidden_size"],
-            )
-            if distributed:
-                # collect results into rank0
-                stats = torch.tensor([loss_val]).to(device)
-                torch.distributed.reduce(stats, 0)
-                if env_params["rank"] == 0:
-                    loss_val = stats[0] / env_params["world_size"]
-        return
-    
-    # position of current batch
-    data_pos = [0] * 2
-    # initialize caches for train and valid
-    hid_cache = [
-        [
-            torch.zeros(
-                train_data.size(0), # 32
-                model.module.layers[layer_i].attn.attn.get_cache_size(), # 256
-                model_params["hidden_size"], # 128
-            ).to(device) # torch.Size([32, 256, 128]) [smoe - bs 32]
-            for layer_i in range(model.module.attn_layer_count) # model.module.attn_layer_count = 3 [smoe]
-        ]
-        for _ in range(2)
-    ]
-    # calculate time
+
+    # Training loop
     start_time = time.time()
-    nb_batches_per_iter = trainer_params["nb_batches_per_iter"] # 1000
-    # print('trainer_params["nb_iter"]: ', trainer_params["nb_iter"])
-    # # import ipdb ipdb.set_trace()
-    for iter_no in range(0, trainer_params["nb_iter"]): # 60 
-        # freq type
-        if model_params["freq_type"] == "function":
-            _threshold = 2.0 / (2.0 + math.sqrt((iter_no + 1)))
-            set_freq_optimal_search(model, _threshold)
+    best_val_loss = None
 
-        # time storing
-        t_sta = time.time()
-        loss_train, data_pos[0], hid_cache[0] = train_iteration(
-            model,
-            model_params["load_balance"],
-            optimizer,
-            scheduler,
-            train_data,
-            nb_batches_per_iter,
-            model_params["block_size"],
-            False,
-            data_pos[0],
-            hid_cache[0],
-            trainer_params["batch_split"],
-            trainer_params["checkpoint_path"],
-        )
-        elapsed = 1000 * (time.time() - t_sta) / nb_batches_per_iter
+    for iter_no in range(0, trainer_params["nb_iter"]):
+        # Training phase
+        model.train()
+        train_loss = 0
+        for batch_idx, (data, target) in enumerate(train_loader):
+            data, target = data.to(device), target.to(device)
+            optimizer.zero_grad()
+
+            # Forward pass
+            output = model(data)
+            loss = nn.CrossEntropyLoss()(output, target)
+            loss.backward()
+            optimizer.step()
+
+            train_loss += loss.item()
+
+        # Validation phase
+        model.eval()
+        val_loss = 0
         with torch.no_grad():
-            loss_val, data_pos[1], hid_cache[1] = train_iteration(
-                model,
-                model_params["load_balance"],
-                optimizer,
-                scheduler,
-                val_data,
-                nb_batches_per_iter,
-                model_params["block_size"],
-                True,
-                data_pos[1],
-                hid_cache[1],
-                trainer_params["batch_split"],
-                trainer_params["checkpoint_path"],
-            )
+            for batch_idx, (data, target) in enumerate(val_loader):
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                loss = nn.CrossEntropyLoss()(output, target)
+                val_loss += loss.item()
 
-        if distributed:
-            # collect results into rank0
-            stats = torch.tensor([loss_train, loss_val]).to(device)
-            torch.distributed.reduce(stats, 0)
-            if env_params["rank"] == 0:
-                loss_train = stats[0] / env_params["world_size"]
-                loss_val = stats[1] / env_params["world_size"]
-            else:
-                continue
-        logging(f"=================== EPOCHS {iter_no} ======================")
-        if ("enwik8" in data_params["data_path"]) or (
-            "text8" in data_params["data_path"]
-        ):
-            msg_result = "Epochs: {} | loss_train: {:.3f} ~ {:.3f} BPC | loss_val: {:.3f} ~ {:.3f} BPC | elapsed: {:.1f}".format(
-                iter_no,
-                loss_train,
-                float(loss_train / math.log(2)),
-                loss_val,
-                float(loss_val / math.log(2)),
-                elapsed,
-            )
-        else:
-            msg_result = "Epochs: {} | loss_train: {:.3f} ~ {:.3f} PPL | loss_val: {:.3f} ~ {:.3f} PPL | elapsed: {:.1f}".format(
-                iter_no,
-                loss_train,
-                float(math.exp(loss_train)),
-                loss_val,
-                float(math.exp(loss_val)),
-                elapsed,
-            )
-        logging(msg_result)
-        if wandb_flag:
-            wandb.log({'train_ppl':float(math.exp(loss_train)),'Epoch':iter_no,'valid_ppl':float(math.exp(loss_val))})
-        logger.log_iter(iter_no, nb_batches_per_iter, loss_train, loss_val, elapsed, model)
-        # Save the model if the validation loss is the best we've seen so far.
-        if (best_val_loss is None) or loss_val < best_val_loss:
-            best_val_loss = loss_val
+        # Average loss per epoch
+        avg_train_loss = train_loss / len(train_loader)
+        avg_val_loss = val_loss / len(val_loader)
+        logging(f"Epoch {iter_no}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}")
+
+        # Save model if validation loss is the best so far
+        if best_val_loss is None or avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
             save_checkpoint(
                 trainer_params["checkpoint_path"],
                 iter_no,
@@ -261,9 +178,18 @@ def launch(
                 scheduler,
                 logger,
             )
-        # save_checkpoint(trainer_params['checkpoint_path'], nb_batches_per_iter, model, optimizer, scheduler, logger)
+
+        # Logging metrics (e.g., using wandb)
+        if wandb_flag:
+            wandb.log({
+                'train_loss': avg_train_loss,
+                'val_loss': avg_val_loss,
+                'epoch': iter_no
+            })
+
+    # Final logging
     end_time = time.time()
-    logging(f"Training time total: {(end_time - start_time)/3600} h")
+    logging(f"Training completed in {(end_time - start_time)/3600:.2f} hours.")
 
 
 if __name__ == "__main__":

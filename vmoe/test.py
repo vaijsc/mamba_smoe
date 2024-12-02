@@ -1,102 +1,144 @@
-import os
 import torch
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader, Subset
-import torch.distributed as dist
+import torch.nn as nn
 
-class ImageNetProcessor:
-    def __init__(self, data_path, input_size=224):
-        self.data_path = data_path
-        self.input_size = input_size
-        self._prepare_transforms()
-        self.train_dataset = self._load_dataset(split="train")
-        self.val_dataset = self._load_dataset(split="val")
 
-    def _prepare_transforms(self):
-        # Standard ImageNet preprocessing transforms
-        self.train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(self.input_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-        self.val_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(self.input_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+class TransformerVisionLayer(nn.Module):
+    def __init__(
+        self,
+        hidden_size,
+        inner_hidden_size,
+        dropout,
+        s,
+        g,
+        f,
+        gate_name,
+        optimal_policy,
+        moe_top_k,
+        freq,
+        alpha,
+        act_experts,
+        g_blance,
+        opt_blance,
+        combine_gate,
+        opt_loss,
+        gamma1=1.0,
+        gamma2=1.0,
+        mu=0.7,
+        beta1=0.9,
+        beta2=0.999,
+        layerth=0,
+        **kargs,
+    ):
+        super(TransformerVisionLayer, self).__init__()
+        # Define gate mechanism based on gate_name
+        if gate_name in ["smoe", "smoe-dropout"]:
+            gate = CustomNaiveGate_Balance_SMoE
+        elif gate_name == "xmoe":
+            gate = CustomNaiveGate_Balance_XMoE
+        elif gate_name == "stablemoe":
+            gate = CustomNaiveGate_Balance_StableMoE
+        else:
+            raise NotImplementedError(f"Gate '{gate_name}' is not implemented!")
 
-    def _load_dataset(self, split):
-        dataset_path = os.path.join(self.data_path, split)
-        transform = self.train_transform if split == "train" else self.val_transform
-        return datasets.ImageFolder(root=dataset_path, transform=transform)
+        # Multi-head self-attention
+        self.attn = (
+            MultiHeadVisionAttention(hidden_size=hidden_size, dropout=dropout, **kargs)
+            if s == "s"
+            else None
+        )
 
-def get_train_val_data(data_path, batch_size, env_params, device, input_size=224):
-    processor = ImageNetProcessor(data_path=data_path, input_size=input_size)
+        # Mixture of Experts (MoE) or Feedforward module
+        if optimal_policy:
+            self.smoe = (
+                CustomizedMoEPositionwiseFFOpt(
+                    gate=gate,
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                    freq=freq,
+                    alpha=alpha,
+                    act_experts=act_experts,
+                    g_blance=g_blance,
+                    opt_blance=opt_blance,
+                    combine_gate=combine_gate,
+                    opt_loss=opt_loss,
+                )
+                if g == "g"
+                else None
+            )
+        else:
+            self.smoe = (
+                CustomizedMoEPositionwiseFFMoM(
+                    gate=gate,
+                    hidden_size=hidden_size,
+                    inner_hidden_size=inner_hidden_size,
+                    dropout=dropout,
+                    moe_top_k=moe_top_k,
+                    gamma1=gamma1,
+                    gamma2=gamma2,
+                    mu=mu,
+                    beta1=beta1,
+                    beta2=beta2,
+                    layerth=layerth,
+                )
+                if g == "m"
+                else None
+            )
 
-    # Data loaders
-    train_loader = DataLoader(
-        processor.train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=env_params.get("num_workers", 16),
-        pin_memory=False
-    )
-    val_loader = DataLoader(
-        processor.val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=env_params.get("num_workers", 16),
-        pin_memory=False
-    )
+        # Standard feedforward network
+        self.ff = (
+            FeedForwardLayer(
+                hidden_size=hidden_size,
+                inner_hidden_size=inner_hidden_size,
+                dropout=dropout,
+            )
+            if f == "f"
+            else None
+        )
 
-    # Optionally distribute data
-    if env_params["distributed"]:
-        train_loader = _split_data_loader(train_loader, env_params)
-        val_loader = _split_data_loader(val_loader, env_params)
+        # Normalization layers
+        self.norm1 = nn.LayerNorm(hidden_size)
+        self.norm2 = nn.LayerNorm(hidden_size)
+        self.norm3 = nn.LayerNorm(hidden_size)
 
-    # Move data to the device
-    train_data = _move_to_device(train_loader, device)
-    val_data = _move_to_device(val_loader, device)
+        # Flags for conditional execution
+        self.use_attn = s == "s"
+        self.use_smoe = g in ["g", "m"]
+        self.use_ff = f == "f"
 
-    return train_data, val_data
+    def forward(self, x, cache=None, moment=None, key_pe=None):
+        """
+        Forward pass for TransformerVisionLayer.
+        
+        Args:
+            x: Input tensor of shape [B, N, H] (B=batch size, N=num patches, H=hidden size).
+            cache: Cached input for attention mechanism (if applicable).
+            moment: State for MoE layers (if applicable).
+            key_pe: Positional encoding tensor.
 
-def _split_data_loader(data_loader, env_params):
-    # Slice dataset for distributed training
-    world_size = env_params["world_size"]
-    rank = env_params["rank"]
-    total_samples = len(data_loader.dataset)
-    samples_per_rank = total_samples // world_size
-    start_idx = rank * samples_per_rank
-    end_idx = start_idx + samples_per_rank
-    sampler = torch.utils.data.SubsetRandomSampler(range(start_idx, end_idx))
-    return DataLoader(
-        data_loader.dataset,
-        batch_size=data_loader.batch_size,
-        sampler=sampler,
-        num_workers=data_loader.num_workers,
-        pin_memory=data_loader.pin_memory,
-    )
+        Returns:
+            x: Updated tensor after layer operations.
+            moment: Updated moment state (if applicable).
+        """
+        if self.use_attn:
+            if cache is not None:
+                x_combined = torch.cat([cache, x], dim=1)  # Combine cache with current input
+            else:
+                x_combined = x
 
-def _move_to_device(data_loader, device):
-    # Moves a batch of data to the specified device
-    data_batches = []
-    for images, labels in data_loader:
-        data_batches.append((images.to(device), labels.to(device)))
-    return data_batches
+            attn_out = self.attn(x, x_combined, x_combined, key_pe)  # Apply attention
+            x = self.norm1(x + attn_out)  # Residual connection + LayerNorm
 
-# Usage Example
-data_params = {"data_path": "/home/ubuntu/workspace/dataset/imagenet1K/"}
-env_params = {"distributed": True, "rank": 0, "world_size": 1, "num_workers": 24}
-batch_size = 128
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = 'cpu'
-train_data, val_data = get_train_val_data(
-    data_path=data_params["data_path"],
-    batch_size=batch_size,
-    env_params=env_params,
-    device=device
-)
+        if self.use_smoe:
+            if self.g in ["m", "a"]:
+                smoe_out, moment = self.smoe(x, moment)
+            else:
+                smoe_out = self.smoe(x)
+            x = self.norm2(x + smoe_out)  # Residual connection + LayerNorm
 
-print(f"Train Batches: {len(train_data)}, Validation Batches: {len(val_data)}")
+        if self.use_ff:
+            ff_out = self.ff(x)
+            x = self.norm3(x + ff_out)  # Residual connection + LayerNorm
+
+        return x, moment
