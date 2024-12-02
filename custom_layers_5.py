@@ -367,23 +367,31 @@ class FMoE(nn.Module):
         ipdb> moe_outp.shape
         torch.Size([2048, 128])
         """
-        batch_size = moe_inp.size(0)//256
-        moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
-        moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
-        # Process in-place and directly overwrite results
-        for i in range(batch_size):
-            moe_outp[i] *= moe_inp[i]  # Element-wise multiplication for one batch sequence at a time
+        # Parameters
+        seq_length = 256
+        batch_size = moe_inp.size(0) // seq_length
+
+        # Reshape moe_inp and moe_outp
+        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
+        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
+
+        # Element-wise multiplication
+        moe_outp = moe_outp * moe_inp  # Element-wise multiplication (out-of-place)
 
         # Normalize moe_inp by L2 norm along the sequence dimension
-        for i in range(batch_size):
-            l2_norm = torch.norm(moe_inp[i], p=2, dim=1, keepdim=True) + 1e-8  # L2 norm for each token
-            moe_inp[i] = moe_inp[i] / l2_norm  # Normalize in-place
-        
-        # Permute for compatibility with matmul
-        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
-        # import ipdb; ipdb.set_trace()
+        l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
+        moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
+
+        # Compute the similarity matrix
+        similarity_matrix = torch.matmul(moe_inp_normalized, moe_inp_normalized.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+
+        # Use the lower triangular part of the similarity matrix
         similarity_matrix = torch.tril(similarity_matrix)
-        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # [batch_size, seq_length, dim]        
+
+        # Update moe_outp using the similarity matrix
+        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # Out-of-place update
+
+        # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
         
         if self.slice_size > 1:

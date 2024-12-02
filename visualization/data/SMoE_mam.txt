@@ -132,3 +132,30 @@ Epochs: 64 | loss_train: 3.626 ~ 37.558 PPL | loss_val: 3.620 ~ 37.351 PPL | ela
 Epochs: 65 | loss_train: 3.635 ~ 37.891 PPL | loss_val: 3.598 ~ 36.518 PPL | elapsed: 873.6
 =================== EPOCHS 66 ======================
 Epochs: 66 | loss_train: 3.624 ~ 37.499 PPL | loss_val: 3.608 ~ 36.907 PPL | elapsed: 871.8
+=================== EPOCHS 67 ======================
+Epochs: 67 | loss_train: 3.625 ~ 37.532 PPL | loss_val: 3.599 ~ 36.562 PPL | elapsed: 870.9
+=================== EPOCHS 68 ======================
+Epochs: 68 | loss_train: 3.619 ~ 37.301 PPL | loss_val: 3.640 ~ 38.106 PPL | elapsed: 871.9
+=================== EPOCHS 69 ======================
+Epochs: 69 | loss_train: 3.631 ~ 37.768 PPL | loss_val: 3.619 ~ 37.298 PPL | elapsed: 870.4
+=================== EPOCHS 70 ======================
+Epochs: 70 | loss_train: 3.625 ~ 37.535 PPL | loss_val: 3.602 ~ 36.674 PPL | elapsed: 872.9
+=================== EPOCHS 71 ======================
+Epochs: 71 | loss_train: 3.621 ~ 37.373 PPL | loss_val: 3.595 ~ 36.419 PPL | elapsed: 876.1
+=================== EPOCHS 72 ======================
+Epochs: 72 | loss_train: 3.617 ~ 37.209 PPL | loss_val: 3.610 ~ 36.955 PPL | elapsed: 873.8
+=================== EPOCHS 73 ======================
+Epochs: 73 | loss_train: 3.626 ~ 37.548 PPL | loss_val: 3.607 ~ 36.866 PPL | elapsed: 872.0
+=================== EPOCHS 74 ======================
+Epochs: 74 | loss_train: 3.625 ~ 37.532 PPL | loss_val: 3.638 ~ 38.000 PPL | elapsed: 872.6
+=================== EPOCHS 75 ======================
+Epochs: 75 | loss_train: 3.618 ~ 37.249 PPL | loss_val: 3.614 ~ 37.130 PPL | elapsed: 872.6
+=================== EPOCHS 76 ======================
+Epochs: 76 | loss_train: 3.609 ~ 36.913 PPL | loss_val: 3.593 ~ 36.328 PPL | elapsed: 872.5
+=================== EPOCHS 77 ======================
+Epochs: 77 | loss_train: 3.624 ~ 37.473 PPL | loss_val: 3.600 ~ 36.596 PPL | elapsed: 874.7
+=================== EPOCHS 78 ======================
+Epochs: 78 | loss_train: 3.622 ~ 37.398 PPL | loss_val: 3.602 ~ 36.657 PPL | elapsed: 873.6
+Training time total: 19.48744551546044 h
+=================== EPOCHS 79 ======================
+Epochs: 79 | loss_train: 3.615 ~ 37.151 PPL | loss_val: 3.587 ~ 36.116 PPL | elapsed: 872.1
