@@ -361,6 +361,12 @@ class FMoE(nn.Module):
         """
         # import ipdb; ipdb.set_trace()
         # moe_outp = moe_outp * moe_inp
+        """
+        ipdb> moe_inp.shape
+        torch.Size([2048, 128])
+        ipdb> moe_outp.shape
+        torch.Size([2048, 128])
+        """
         # Parameters
         seq_length = 256
         batch_size = moe_inp.size(0) // seq_length
@@ -372,19 +378,19 @@ class FMoE(nn.Module):
 
         # Normalize moe_inp by L2 norm along the sequence dimension
         l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8
-        moe_inp /= l2_norm  # In-place normalization to save memory
+        moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
 
         # Initialize moe_outp_accum for accumulation
         moe_outp_accum = torch.zeros_like(moe_outp)
 
         # Block-wise computation for similarity_matrix and moe_outp update
-        block_size = 64  # Adjust this value based on your GPU memory
+        block_size = 64  # Adjust based on GPU memory
         for start in range(0, seq_length, block_size):
             end = min(start + block_size, seq_length)
-            moe_inp_block = moe_inp[:, start:end, :]  # Extract block
-            
+            moe_inp_block = moe_inp_normalized[:, start:end, :]  # Extract block
+
             # Compute the similarity block
-            similarity_block = torch.matmul(moe_inp_block, moe_inp.transpose(1, 2))
+            similarity_block = torch.matmul(moe_inp_block, moe_inp_normalized.transpose(1, 2))
             similarity_block = torch.tril(similarity_block)  # Use lower triangular part
 
             # Update moe_outp for the current block
@@ -393,7 +399,7 @@ class FMoE(nn.Module):
         # Replace moe_outp with the accumulated result
         moe_outp = moe_outp_accum.view(-1, dim)
 
-        
+
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
