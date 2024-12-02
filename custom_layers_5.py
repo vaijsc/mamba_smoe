@@ -374,9 +374,13 @@ class FMoE(nn.Module):
         # Reshape moe_inp and moe_outp
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
+
+        # # Element-wise multiplication
+        # moe_outp = moe_outp * moe_inp  # Element-wise multiplication (out-of-place)
+
         # Normalize moe_inp by L2 norm along the sequence dimension
-        # l2_norm =   # L2 norm for each token
-        moe_inp_normalized = moe_inp / (torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8)  # Out-of-place normalization
+        l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
+        moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
 
         # Compute the similarity matrix
         similarity_matrix = torch.matmul(moe_inp_normalized, moe_inp_normalized.transpose(1, 2))  # [batch_size, seq_length, seq_length]
