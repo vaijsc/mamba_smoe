@@ -370,41 +370,26 @@ class FMoE(nn.Module):
         # Parameters
         seq_length = 256
         batch_size = moe_inp.size(0) // seq_length
-        dim = moe_inp.size(1)
 
         # Reshape moe_inp and moe_outp
-        moe_inp = moe_inp.view(batch_size, seq_length, dim)
-        moe_outp = moe_outp.view(batch_size, seq_length, dim)
-
+        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
+        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
         # Normalize moe_inp by L2 norm along the sequence dimension
-        l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8
-        moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
+        # l2_norm =   # L2 norm for each token
+        moe_inp_normalized = moe_inp / (torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8)  # Out-of-place normalization
 
-        # Initialize moe_outp_accum for accumulation
-        moe_outp_accum = torch.zeros_like(moe_outp)
+        # Compute the similarity matrix
+        similarity_matrix = torch.matmul(moe_inp_normalized, moe_inp_normalized.transpose(1, 2))  # [batch_size, seq_length, seq_length]
 
-        # Process similarity matrix in smaller chunks
-        chunk_size = 32  # Adjust based on available GPU memory
-        for i in range(0, seq_length, chunk_size):
-            for j in range(0, seq_length, chunk_size):
-                # Compute similarity for current chunk
-                inp_chunk_i = moe_inp_normalized[:, i:i+chunk_size, :]
-                inp_chunk_j = moe_inp_normalized[:, j:j+chunk_size, :]
+        # Use the lower triangular part of the similarity matrix
+        similarity_matrix = torch.tril(similarity_matrix)
 
-                similarity_chunk = torch.matmul(inp_chunk_i, inp_chunk_j.transpose(1, 2))  # [batch_size, chunk_size, chunk_size]
+        # Update moe_outp using the similarity matrix
+        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # Out-of-place update
 
-                # Apply lower triangular mask for causal similarity
-                if i == j:
-                    mask = torch.tril(torch.ones_like(similarity_chunk))  # Lower triangular mask
-                    similarity_chunk *= mask
-
-                # Update moe_outp for the current chunk
-                moe_outp_accum[:, i:i+chunk_size, :] += torch.matmul(similarity_chunk, moe_outp[:, j:j+chunk_size, :])
-
-            # Reshape moe_outp back to the original shape
-            moe_outp = moe_outp_accum.view(-1, dim)
-
-
+        # Reshape moe_outp back to the original shape
+        moe_outp = moe_outp.view(-1, moe_outp.size(2))
+        
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
