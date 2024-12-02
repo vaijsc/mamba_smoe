@@ -40,7 +40,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/phinh2/phinh2/workspace/MomentumSMoE/result/checkpoints/2asmoe_mf_mambell.pt \
+--checkpoint /lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/checkpoints/2asmoe_mf_mambell.pt \
 "
  
 # bs 48 -> 16 -> 32
