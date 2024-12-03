@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=2asmoe_mbell
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_m_mambell_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_m_mambell.txt
+#SBATCH --job-name=2asmoe_mbell1
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_m_mambell1_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_m_mambell1.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --nodelist=sdc2-hpc-dgx-a100-015
@@ -20,7 +20,7 @@ echo "Running"
 echo $CUDA_VISIBLE_DEVICES
 
 args="
---data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/ \
+--data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext/ \
 --base_arch transformer \
 --architecture sgsgsgsgsgsg \
 --gate_name smoe \
@@ -40,7 +40,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2asmoe_mambell.pt \
+--checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2asmoe_mambell1.pt \
 "
  
 # bs 48 -> 16 -> 32
