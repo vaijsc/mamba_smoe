@@ -379,9 +379,7 @@ class FMoE(nn.Module):
         l2_norm_c = torch.norm(moe_inp, p=2, dim=1, keepdim=True) + 1e-8  # L2 norm for each token
         moe_inp_normalized_c = moe_inp / l2_norm_c  # Out-of-place normalization
         # Element-wise multiplication
-        # moe_outp = moe_outp * moe_inp_normalized_c  # Element-wise multiplication (out-of-place)
-        for i in range(batch_size):
-            moe_outp[i] *= moe_inp_normalized_c[i]  # Element-wise multiplication for one batch sequence at a time
+        moe_outp = moe_outp * moe_inp_normalized_c  # Element-wise multiplication (out-of-place)
 
         # Normalize along the sequence dimension (axis=1)
         mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
