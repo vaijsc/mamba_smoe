@@ -1,50 +1,47 @@
 import torch
 
-def transform_matrix_batch(input_matrix, l, d, device='cuda'):
-    """
-    Transform the input tensor of shape (batch_size, l, l) into a larger tensor
-    with blocks of identity matrices scaled by the corresponding values.
+# Create example tensors
+batch_size = 2
+seq_length = 4
+hidden_dim = 3
+
+# Sample input tensor (batch_size, seq_length, hidden_dim)
+moe_inp = torch.tensor([
+    [[1.0, 2.0, 3.0],
+     [4.0, 5.0, 6.0],
+     [7.0, 8.0, 9.0],
+     [2.0, 3.0, 4.0]],
     
-    Args:
-        input_matrix (torch.Tensor): Tensor of shape (batch_size, l, l).
-        l (int): Sequence length.
-        d (int): Dimension of each identity matrix block.
-        device (str): Device to perform computations ('cuda' or 'cpu').
+    [[5.0, 6.0, 7.0],
+     [8.0, 9.0, 1.0],
+     [2.0, 3.0, 4.0],
+     [5.0, 6.0, 7.0]]
+])
+
+# Sample output tensor with same shape
+moe_outp = torch.tensor([
+    [[0.1, 0.2, 0.3],
+     [0.4, 0.5, 0.6],
+     [0.7, 0.8, 0.9],
+     [0.2, 0.3, 0.4]],
     
-    Returns:
-        torch.Tensor: Transformed tensor of shape (batch_size, l*d, l*d).
-    """
-    # Ensure the input tensor is on the specified device
-    input_matrix = input_matrix.to(device)
+    [[0.5, 0.6, 0.7],
+     [0.8, 0.9, 0.1],
+     [0.2, 0.3, 0.4],
+     [0.5, 0.6, 0.7]]
+])
 
-    # Get the batch size
-    batch_size = input_matrix.size(0)
-    
-    # Create an identity matrix of size (d, d) on the GPU
-    identity_block = torch.eye(d, device=device).unsqueeze(0)  # Shape: (1, d, d)
-    
-    # Scale the identity block by each element of the input matrix
-    expanded_blocks = input_matrix.view(batch_size, l, l, 1, 1) * identity_block
-    # expanded_blocks shape: (batch_size, l, l, d, d)
+# 1. Calculate L2 norm along dim=1 (sequence dimension)
+l2_norm_c = torch.norm(moe_inp, p=2, dim=1, keepdim=True) + 1e-8
 
-    # Rearrange the tensor to form the final block-diagonal matrix
-    result = expanded_blocks.permute(0, 1, 3, 2, 4).reshape(batch_size, l * d, l * d)
-    # result shape: (batch_size, l*d, l*d)
+# 2. Normalize input
+moe_inp_normalized_c = moe_inp / l2_norm_c
 
-    return result
+# 3. Element-wise multiplication
+result = moe_outp * moe_inp_normalized_c
 
-# Example usage
-batch_size = 8
-l = 256
-d = 128
-
-# Generate a random input matrix of shape (batch_size, l, l)
-input_matrix = torch.randn(batch_size, l, l)
-input_matrix = torch.tril(input_matrix)
-print('input:', input_matrix[0])
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-output_matrix = transform_matrix_batch(input_matrix, l, d, device='cpu')
-
-# Print the output shape
-print("Output Matrix Shape:", output_matrix[0])
+print(moe_outp)
+print("Original input shape:", moe_inp)
+print("L2 norm shape:", l2_norm_c)
+print("Normalized input shape:", moe_inp_normalized_c)
+print("Final result shape:", result)
