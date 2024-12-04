@@ -380,15 +380,15 @@ class FMoE(nn.Module):
         moe_inp_normalized_c = moe_inp / l2_norm_c  # Out-of-place normalization
         # Element-wise multiplication
         moe_outp = moe_outp * moe_inp_normalized_c  # Element-wise multiplication (out-of-place)
-        del moe_inp_normalized_c
-        torch.cuda.empty_cache()
+        # del moe_inp_normalized_c
+        # torch.cuda.empty_cache()
         # # Normalize along the sequence dimension (axis=1)
         mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
         std = moe_inp.std(dim=1, keepdim=True) + 1e-8   # Standard deviation along the sequence dimension
         # Normalize the input
         moe_inp = (moe_inp - mean) / std
-        del mean, std
-        torch.cuda.empty_cache()
+        # del mean, std
+        # torch.cuda.empty_cache()
         # # Normalize moe_inp by L2 norm along the sequence dimension
         # l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
         # moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
@@ -398,11 +398,11 @@ class FMoE(nn.Module):
         # Use the lower triangular part of the similarity matrix
         similarity_matrix = torch.tril(similarity_matrix)
         # Step 3: Normalize similarities using softmax
-        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
+        # normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
         # Update moe_outp using the similarity matrix
-        del similarity_matrix
-        torch.cuda.empty_cache()
-        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
+        # del similarity_matrix
+        # torch.cuda.empty_cache()
+        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # Out-of-place update
 
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
