@@ -376,17 +376,17 @@ class FMoE(nn.Module):
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
 
         # Normalize moe_inp by L2 norm along the sequence dimension
-        l2_norm_c = torch.norm(moe_inp, p=1, dim=1, keepdim=True) + 1e-8  # L2 norm for each token
+        l2_norm_c = torch.norm(moe_inp, p=2, dim=1, keepdim=True) + 1e-8  # L2 norm for each token
         moe_inp_normalized_c = moe_inp / l2_norm_c  # Out-of-place normalization
         # Element-wise multiplication
         moe_outp = moe_outp * moe_inp_normalized_c  # Element-wise multiplication (out-of-place)
 
-        # Normalize moe_inp by L2 norm along the sequence dimension
-        l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
-        moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
+        # # Normalize moe_inp by L2 norm along the sequence dimension
+        # l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
+        # moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
 
         # Compute the similarity matrix
-        similarity_matrix = torch.matmul(moe_inp_normalized, moe_inp_normalized.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
 
         # Use the lower triangular part of the similarity matrix
         similarity_matrix = torch.tril(similarity_matrix)
