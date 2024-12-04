@@ -400,6 +400,8 @@ class FMoE(nn.Module):
         # Step 3: Normalize similarities using softmax
         normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
         # Update moe_outp using the similarity matrix
+        del similarity_matrix
+        torch.cuda.empty_cache()
         moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
 
         # Reshape moe_outp back to the original shape
