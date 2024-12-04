@@ -376,19 +376,17 @@ class FMoE(nn.Module):
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
 
         # Normalize moe_inp by L2 norm along the sequence dimension
-        # l2_norm_c = torch.norm(moe_inp, p=2, dim=1, keepdim=True) + 1e-8  # L2 norm for each token
-        # Normalize moe_inp by sum of absolute values along the sequence dimension
-        abs_sum = torch.sum(torch.abs(moe_inp), dim=1, keepdim=True) + 1e-8  # Sum of absolute values for each token
-        moe_inp_normalized_c = moe_inp / abs_sum  # Out-of-place normalization
+        l2_norm_c = torch.norm(moe_inp, p=2, dim=1, keepdim=True) + 1e-8  # L2 norm for each token
+        moe_inp_normalized_c = moe_inp / l2_norm_c  # Out-of-place normalization
         # Element-wise multiplication
         moe_outp = moe_outp * moe_inp_normalized_c  # Element-wise multiplication (out-of-place)
-
+        del moe_inp_normalized
         # # Normalize along the sequence dimension (axis=1)
         mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
         std = moe_inp.std(dim=1, keepdim=True) + 1e-8   # Standard deviation along the sequence dimension
         # Normalize the input
         moe_inp = (moe_inp - mean) / std
-        
+        del mean, std
         # # Normalize moe_inp by L2 norm along the sequence dimension
         # l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
         # moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
