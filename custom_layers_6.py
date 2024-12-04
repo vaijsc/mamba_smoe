@@ -381,11 +381,11 @@ class FMoE(nn.Module):
         # Element-wise multiplication
         moe_outp = moe_outp * moe_inp_normalized_c  # Element-wise multiplication (out-of-place)
 
-        # Normalize along the sequence dimension (axis=1)
-        mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
-        std = moe_inp.std(dim=1, keepdim=True) + 1e-8   # Standard deviation along the sequence dimension
-        # Normalize the input
-        moe_inp = (moe_inp - mean) / std
+        # # Normalize along the sequence dimension (axis=1)
+        # mean = moe_inp.mean(dim=1, keepdim=True)  # Mean along the sequence dimension
+        # std = moe_inp.std(dim=1, keepdim=True) + 1e-8   # Standard deviation along the sequence dimension
+        # # Normalize the input
+        # moe_inp = (moe_inp - mean) / std
         
         # # Normalize moe_inp by L2 norm along the sequence dimension
         # l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
