@@ -388,7 +388,7 @@ class FMoE(nn.Module):
         # Normalize the input
         moe_inp = (moe_inp - mean) / std
         del mean, std
-        # torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
         # # Normalize moe_inp by L2 norm along the sequence dimension
         # l2_norm = torch.norm(moe_inp, p=2, dim=2, keepdim=True) + 1e-8  # L2 norm for each token
         # moe_inp_normalized = moe_inp / l2_norm  # Out-of-place normalization
