@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=2asmom
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_mom2_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_mom2.txt
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_mom_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2asmoe_mom.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --nodelist=sdc2-hpc-dgx-a100-020
@@ -46,7 +46,7 @@ args="
 --mu 0.7 \
 --beta1 0.9 \
 --beta2 0.999 \
---checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_mom2.pt \
+--checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2asmoe_mom.pt \
 "
 
 echo "Training ..."
