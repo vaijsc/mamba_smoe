@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=abase
+#SBATCH --job-name=2absmoe
 #SBATCH --output=/lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/2asmoe_m_err.txt
 #SBATCH --error=/lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/2asmoe_m.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
-#SBATCH --nodelist=sdc2-hpc-dgx-a100-018
+#SBATCH --nodelist=sdc2-hpc-dgx-a100-016
 #SBATCH --mem-per-gpu=50G
 #SBATCH --cpus-per-gpu=14
 #SBATCH --partition=research
@@ -40,7 +40,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/checkpoints/2asmoe_m.pt \
+--checkpoint /lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/checkpoints/2asmoe_m1.pt \
 "
  
 # bs 48 -> 16 -> 32

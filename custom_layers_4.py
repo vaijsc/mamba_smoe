@@ -379,14 +379,11 @@ class FMoE(nn.Module):
         std = moe_inp.std(dim=1, keepdim=True) + 1e-8   # Standard deviation along the sequence dimension
         # Normalize the input
         moe_inp = (moe_inp - mean) / std
-        
-        # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # import ipdb; ipdb.set_trace()
         similarity_matrix = torch.tril(similarity_matrix)
-        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # [batch_size, seq_length, dim]        
+        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # [batch_size, seq_length, dim]   
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
-        
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
