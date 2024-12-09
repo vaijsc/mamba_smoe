@@ -185,7 +185,7 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        self.additional_params = nn.Parameter(torch.ones(1, 128))
+        # self.additional_params = nn.Parameter(torch.ones(1, 128))
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
         r"""
@@ -354,11 +354,12 @@ class FMoE(nn.Module):
         # moe_outp [2048, 128]
         seq_length = 256
         batch_size = moe_inp.size(0) // seq_length
-        breakpoint()
+        # breakpoint()
         # Reshape moe_inp and moe_outp
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
         # moe_outp = moe_outp * moe_inp
+        # print('moe')
         for i in range (batch_size):
             moe_outp[i] *= moe_inp[i]
         # breakpoint()        
@@ -366,9 +367,9 @@ class FMoE(nn.Module):
         # additional_params = self.additional_params.expand(batch_size, seq_length, -1)
         # print(additional_params.shape)
         # Modify moe_outp to incorporate scaling parameters
-        for i in range (batch_size):
-            params_expanded = self.additional_params.expand_as(moe_outp[i])
-            moe_outp[i] = moe_outp[i] / params_expanded
+        # for i in range (batch_size):
+        #     params_expanded = self.additional_params.expand_as(moe_outp[i])
+        #     moe_outp[i] = moe_outp[i] / params_expanded
         # moe_outp = torch.mul(moe_outp, moe_inp)
         # Compute the similarity matrix
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
