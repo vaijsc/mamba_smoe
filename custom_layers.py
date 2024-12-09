@@ -368,8 +368,8 @@ class FMoE(nn.Module):
         moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
         moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
         # Process in-place and directly overwrite results
-        # for i in range(batch_size):
-        #     moe_outp[i] *= moe_inp[i]  # Element-wise multiplication for one batch sequence at a time
+        for i in range(batch_size):
+            moe_outp[i] *= moe_inp[i]  # Element-wise multiplication for one batch sequence at a time
         
         # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
