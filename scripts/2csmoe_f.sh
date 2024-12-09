@@ -36,7 +36,7 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 80 \
---batch-sz 48 \
+--batch-sz 16 \
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
@@ -46,7 +46,7 @@ args="
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10012 --nproc_per_node=2 --use_env train_8.py $args
+python -m torch.distributed.launch --master_port 10012 --nproc_per_node=1 --use_env train_8.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
