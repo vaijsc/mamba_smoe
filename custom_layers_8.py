@@ -185,7 +185,7 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        # self.additional_params = nn.Parameter(torch.ones(1, 128))
+        self.additional_params = nn.Parameter(torch.ones(1, 1, 128))
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
         r"""
@@ -370,6 +370,7 @@ class FMoE(nn.Module):
         # for i in range (batch_size):
         #     params_expanded = self.additional_params.expand_as(moe_outp[i])
         #     moe_outp[i] = moe_outp[i] / params_expanded
+        moe_outp = moe_outp / self.additional_params
         # moe_outp = torch.mul(moe_outp, moe_inp)
         # Compute the similarity matrix
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
