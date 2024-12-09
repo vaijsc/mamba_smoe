@@ -363,16 +363,17 @@ class FMoE(nn.Module):
         for i in range (batch_size):
             moe_outp[i] *= moe_inp[i]
         # for i in range (batch_size):
-            moe_outp[i] /= self.additional_params[0]
-        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+            moe_outp[i] /= self.additional_params
+        # similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        similarity_matrix = torch.einsum('bij, bji -> bii', moe_inp, moe_inp.transpose(1,2))  # [batch_size, seq_length, seq_length]
         # Use the lower triangular part of the similarity matrix
         similarity_matrix = torch.tril(similarity_matrix)
         # Step 3: Normalize similarities using softmax
-        # normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
+        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
         # Update moe_outp using the similarity matrix
         # del similarity_matrix
         # torch.cuda.empty_cache()
-        moe_outp = torch.matmul(similarity_matrix, moe_outp)  # Out-of-place update
+        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
 
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
