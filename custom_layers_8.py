@@ -185,7 +185,7 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        self.additional_params = nn.Parameter(torch.ones(1, 1, 128))
+        self.additional_params = nn.Parameter(torch.ones(1, 1, 352))
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
         r"""
