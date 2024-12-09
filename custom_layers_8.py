@@ -361,10 +361,9 @@ class FMoE(nn.Module):
         # moe_outp = moe_outp * moe_inp
         for i in range (batch_size):
             moe_outp[i] *= moe_inp[i]
-        breakpoint()        
+        # breakpoint()        
         # Reshape and expand additional parameters
         additional_params = self.additional_params.expand(batch_size, seq_length, -1)
-
         # Modify moe_outp to incorporate scaling parameters
         moe_outp = moe_outp / additional_params
         # moe_outp = torch.mul(moe_outp, moe_inp)
