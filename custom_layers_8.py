@@ -377,7 +377,7 @@ class FMoE(nn.Module):
         # breakpoint()
         # moe_outp = moe_outp * moe_inp
         for i in range (batch_size):
-            moe_outp[i] = moe_outp[i] * moe_inp[i]
+            moe_outp[i] *= moe_inp[i]
         # moe_outp = torch.mul(moe_outp, moe_inp)
         # Compute the similarity matrix
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
