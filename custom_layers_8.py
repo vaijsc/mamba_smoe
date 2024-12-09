@@ -366,7 +366,6 @@ class FMoE(nn.Module):
             # moe_outp[i] /= self.additional_params
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # breakpoint()
-        # similarity_matrix = torch.einsum('bij,bji->bii', moe_inp, moe_inp.transpose(1,2))  # [batch_size, seq_length, seq_length]
         # Use the lower triangular part of the similarity matrix
         similarity_matrix = torch.tril(similarity_matrix)
         # Step 3: Normalize similarities using softmax
