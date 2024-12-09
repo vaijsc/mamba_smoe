@@ -185,9 +185,7 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        # self.lin_gate = nn.Linear(128, 128)
-        # self.norm = nn.LayerNorm(128) 
-
+        self.additional_params = nn.Parameter(torch.ones(1, 1, 128))
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
         r"""
@@ -350,34 +348,25 @@ class FMoE(nn.Module):
         torch.Size([2048, 2, 128])
         """
         moe_outp = tree.map_structure(bmm_func, moe_outp)
-        ################################################### MODIFY ################################################
-        """
-        ipdb> moe_inp.shape
-        torch.Size([2048, 128])
-        ipdb> moe_outp.shape
-        torch.Size([2048, 2, 128])
-        ipdb> gate_score.shape  
-        torch.Size([2048, 1, 2])
-        """
-        # import ipdb; ipdb.set_trace()
-        # moe_outp = moe_outp * moe_inp
-        """
-        ipdb> moe_inp.shape
-        torch.Size([2048, 128])
-        ipdb> moe_outp.shape
-        torch.Size([2048, 128])
-        """
+        ################################################### MODIFY ###############################################
         # Parameters
+        # moe_inp [2048, 128]
+        # moe_outp [2048, 128]
         seq_length = 256
         batch_size = moe_inp.size(0) // seq_length
 
         # Reshape moe_inp and moe_outp
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
-        # breakpoint()
         # moe_outp = moe_outp * moe_inp
         for i in range (batch_size):
             moe_outp[i] *= moe_inp[i]
+        breakpoint()        
+        # Reshape and expand additional parameters
+        additional_params = self.additional_params.expand(batch_size, seq_length, -1)
+
+        # Modify moe_outp to incorporate scaling parameters
+        moe_outp = moe_outp / additional_params
         # moe_outp = torch.mul(moe_outp, moe_inp)
         # Compute the similarity matrix
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
