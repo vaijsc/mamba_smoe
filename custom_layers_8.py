@@ -367,7 +367,8 @@ class FMoE(nn.Module):
         # print(additional_params.shape)
         # Modify moe_outp to incorporate scaling parameters
         for i in range (batch_size):
-            moe_outp[i] = moe_outp[i] / self.additional_params
+            params_expanded = self.additional_params.expand_as(moe_outp[i])
+            moe_outp[i] = moe_outp[i] / params_expanded
         # moe_outp = torch.mul(moe_outp, moe_inp)
         # Compute the similarity matrix
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
