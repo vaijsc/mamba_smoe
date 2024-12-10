@@ -46,8 +46,8 @@ args="
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10023 --nproc_per_node=2 --use_env train_1.py $args
+python -m torch.distributed.launch --master_port 10023 --nproc_per_node=4 --use_env train_1.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10023 --nproc_per_node=2 --use_env train_1.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10023 --nproc_per_node=4 --use_env train_1.py $args --resume --full-eval-mode
