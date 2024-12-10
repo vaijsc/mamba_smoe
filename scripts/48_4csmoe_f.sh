@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=44f
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/44_2csmoe_f_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/44_2csmoe_f.txt
+#SBATCH --job-name=48f
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/48_4csmoe_f_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/48_4csmoe_f.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=4
 #SBATCH --nodelist=sdc2-hpc-dgx-a100-015
@@ -40,14 +40,14 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/44_2csmoe_f.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/48_4csmoe_f.pt \
 "
  
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10012 --nproc_per_node=2 --use_env train_8.py $args
+python -m torch.distributed.launch --master_port 10012 --nproc_per_node=4 --use_env train_8.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10012 --nproc_per_node=2 --use_env train_8.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10012 --nproc_per_node=4 --use_env train_8.py $args --resume --full-eval-mode
