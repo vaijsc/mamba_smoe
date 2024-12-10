@@ -4,7 +4,7 @@
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/48_4csmoe_f.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=4
-#SBATCH --nodelist=sdc2-hpc-dgx-a100-015
+#SBATCH --nodelist=sdc2-hpc-dgx-a100-016
 #SBATCH --mem-per-gpu=50G
 #SBATCH --cpus-per-gpu=24
 #SBATCH --partition=research
