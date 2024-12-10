@@ -10,7 +10,7 @@ import time
 
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_1 import TransformerSeq
+from models_3 import TransformerSeq
 from trainer import train_iteration, full_eval
 import datetime
 import wandb
@@ -93,7 +93,6 @@ def launch(
 
     # create logger
     logger = Logger()
-    # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
     folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
     # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     logging = create_exp_dir(f"{folder_path}")

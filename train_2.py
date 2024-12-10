@@ -93,8 +93,9 @@ def launch(
 
     # create logger
     logger = Logger()
-    # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/smoe_m/log'
+    # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
+    folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     logging = create_exp_dir(f"{folder_path}")
     ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
@@ -167,7 +168,7 @@ def launch(
         return
     
     # position of current batch
-    data_pos = [0] * 2 # [0, 0]
+    data_pos = [0] * 2
     # initialize caches for train and valid
     hid_cache = [
         [
@@ -184,7 +185,7 @@ def launch(
     start_time = time.time()
     nb_batches_per_iter = trainer_params["nb_batches_per_iter"] # 1000
     # print('trainer_params["nb_iter"]: ', trainer_params["nb_iter"])
-    # import ipdb; ipdb.set_trace()
+    # # import ipdb ipdb.set_trace()
     for iter_no in range(0, trainer_params["nb_iter"]): # 60 
         # freq type
         if model_params["freq_type"] == "function":

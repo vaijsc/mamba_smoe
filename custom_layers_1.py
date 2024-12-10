@@ -8,7 +8,7 @@ from custom_functions import prepare_forward, ensure_comm
 from custom_functions import MOEScatter, MOEGather
 from custom_functions import AllGather, Slice
 from gates import NaiveGate
-
+import torch.nn.functional as F
 from fastermoe.config import switch_from_env
 
 
@@ -185,7 +185,6 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
         r"""
@@ -294,7 +293,7 @@ class FMoE(nn.Module):
             self.world_size,
             experts=self.experts,
         )
-
+        
         # recover deleted tensors
         if self.mask is not None and self.mask_dict is not None:
 
@@ -321,7 +320,7 @@ class FMoE(nn.Module):
             """
             moe_outp = tree.map_structure(recover_func, fwd)
         else:
-
+            
             def view_func(tensor):
                 dim = tensor.shape[-1]
                 tensor = tensor.view(-1, self.top_k, dim)
@@ -342,13 +341,34 @@ class FMoE(nn.Module):
             dim = tensor.shape[-1]
             tensor = torch.bmm(gate_score, tensor).reshape(-1, dim)
             return tensor
-        moe_outp = tree.map_structure(bmm_func, moe_outp)
         """
+        moe_outp
         ipdb> moe_outp.shape
         torch.Size([2048, 2, 128])
-        ipdb> gate_score.shape  
-        torch.Size([2048, 1, 2])
         """
+        moe_outp = tree.map_structure(bmm_func, moe_outp)
+        ################################################### MODIFY ###############################################
+        # Parameters
+        # moe_inp [2048, 128]
+        # moe_outp [2048, 128]
+        seq_length = 256
+        batch_size = moe_inp.size(0) // seq_length
+        # breakpoint()
+        # Reshape moe_inp and moe_outp
+        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
+        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
+        moe_outp = torch.sigmoid(moe_outp)
+        moe_outp *= moe_inp
+        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        # Use the lower triangular part of the similarity matrix
+        similarity_matrix = torch.tril(similarity_matrix)
+        diagonal = torch.diagonal(similarity_matrix, dim1=1, dim2=2)
+        diagonal_expanded = diagonal.unsqueeze(-1)
+        normalized_similarity = similarity_matrix / diagonal_expanded
+        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
+
+        # Reshape moe_outp back to the original shape
+        moe_outp = moe_outp.view(-1, moe_outp.size(2))
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
@@ -357,13 +377,19 @@ class FMoE(nn.Module):
                 )
 
             moe_outp = tree.map_structure(all_gather_func, moe_outp)
-
+        # import ipdb; ipdb.set_trace()
         moe_outp_batch_size = tree.flatten(
             tree.map_structure(lambda tensor: tensor.shape[0], moe_outp)
-        )
+        ) # 8, 256, 
         assert all(
             [batch_size == moe_outp_batch_size[0] for batch_size in moe_outp_batch_size]
         ), "MoE outputs must have the same batch size"
+        """
+        ipdb> moe_outp_batch_size
+        [2048]        
+        ipdb> moe_outp.shape
+        torch.Size([2048, 128])
+        """
         return moe_outp
 
 

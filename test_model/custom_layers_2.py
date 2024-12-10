@@ -185,6 +185,9 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
+        # self.lin_gate = nn.Linear(128, 128)
+        # self.norm = nn.LayerNorm(128) 
+
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
         r"""
@@ -347,28 +350,31 @@ class FMoE(nn.Module):
         torch.Size([2048, 2, 128])
         """
         moe_outp = tree.map_structure(bmm_func, moe_outp)
-        ################################################### MODIFY ###############################################
-        # Parameters
-        # moe_inp [2048, 128]
-        # moe_outp [2048, 128]
-        seq_length = 256
-        batch_size = moe_inp.size(0) // seq_length
-        # breakpoint()
-        # Reshape moe_inp and moe_outp
-        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
-        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
-        moe_outp = torch.tanh(moe_outp)+1
-        moe_outp *= moe_inp
+        ################################################### MODIFY ################################################
+        """
+        ipdb> moe_outp.shape
+        torch.Size([2048, 2, 128])
+        ipdb> gate_score.shape  
+        torch.Size([2048, 1, 2])
+        """
+        # import ipdb; ipdb.set_trace()
+        moe_outp = moe_outp * moe_inp
+        moe_inp = moe_inp.view(moe_inp.size(0)//256, 256, moe_inp.size(1))
+        moe_outp = moe_outp.view(moe_outp.size(0)//256, 256, moe_outp.size(1))
+        # Permute for compatibility with matmul
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
-        # Use the lower triangular part of the similarity matrix
-        similarity_matrix = torch.tril(similarity_matrix)
-        diagonal = torch.diagonal(similarity_matrix, dim1=1, dim2=2)
-        diagonal_expanded = diagonal.unsqueeze(-1)
-        normalized_similarity = similarity_matrix / diagonal_expanded
-        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
+        # Step 2: Apply causal mask
+        seq_length = moe_inp.size(1)
+        causal_mask = torch.tril(torch.ones(seq_length, seq_length, device=moe_inp.device)).unsqueeze(0)  # [1, seq_length, seq_length]
+        similarity_matrix = similarity_matrix.masked_fill(causal_mask == 0, float('-inf'))
 
-        # Reshape moe_outp back to the original shape
+        # Step 3: Normalize similarities using softmax
+        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
+
+        # Step 4: Compute weighted sum of previous tokens
+        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # [batch_size, seq_length, dim]        
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
+        
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
