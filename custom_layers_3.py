@@ -358,15 +358,17 @@ class FMoE(nn.Module):
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
         # moe_outp = torch.tanh(moe_outp)+1
-        moe_outp = F.softplus(moe_outp)
+        # moe_outp = F.softplus(moe_outp)
+        moe_outp = torch.sigmoid(moe_outp)
+        # Perform element-wise multiplication out-of-place
         moe_outp = moe_outp * moe_inp
-        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        # similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # Use the lower triangular part of the similarity matrix
-        similarity_matrix = torch.tril(similarity_matrix)
-        diagonal = torch.diagonal(similarity_matrix, dim1=1, dim2=2)
-        diagonal_expanded = diagonal.unsqueeze(-1)
-        normalized_similarity = similarity_matrix / diagonal_expanded
-        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
+        # similarity_matrix = torch.tril(similarity_matrix)
+        # diagonal = torch.diagonal(similarity_matrix, dim1=1, dim2=2)
+        # diagonal_expanded = diagonal.unsqueeze(-1)
+        # normalized_similarity = similarity_matrix / diagonal_expanded
+        # moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
 
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
