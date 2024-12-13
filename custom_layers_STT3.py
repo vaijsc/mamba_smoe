@@ -361,8 +361,8 @@ class FMoE(nn.Module):
         norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)  # Shape: [batch_size, seq_length, 1]
 
         # Normalize the tokens so that each token has a norm of 1
-        moe_inp /= norms * (1/3)  # Shape: [batch_size, seq_length, dimension]
-
+        moe_inp = moe_inp / norms   # Shape: [batch_size, seq_length, dimension]
+        moe_inp = moe_inp * (1/3)
         # Perform element-wise multiplication out-of-place
         dot_product = torch.einsum('bld,bld->bl', moe_inp, moe_outp)
         dot_product = dot_product.unsqueeze(-1)  # Shape: [batch_size, seq_length, 1]
