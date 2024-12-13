@@ -357,7 +357,7 @@ class FMoE(nn.Module):
         # Reshape moe_inp and moe_outp
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
-        moe_outp = torch.tanh(moe_outp)+1
+        moe_outp = 1/100 * (torch.tanh(moe_outp)+1)
         moe_outp = moe_outp * moe_inp
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # Use the lower triangular part of the similarity matrix
