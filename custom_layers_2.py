@@ -362,13 +362,13 @@ class FMoE(nn.Module):
         # norm_value = norm_value + 1e-8  # Avoid division by zero
         moe_outp = 1 / norm_value * (torch.tanh(moe_outp) + 1)
         moe_outp = moe_outp * moe_inp
-        similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        # similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # Use the lower triangular part of the similarity matrix
-        similarity_matrix = torch.tril(similarity_matrix)
-        diagonal = torch.diagonal(similarity_matrix, dim1=1, dim2=2)
-        diagonal_expanded = diagonal.unsqueeze(-1)
-        normalized_similarity = similarity_matrix / diagonal_expanded
-        moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
+        # similarity_matrix = torch.tril(similarity_matrix)
+        # diagonal = torch.diagonal(similarity_matrix, dim1=1, dim2=2)
+        # diagonal_expanded = diagonal.unsqueeze(-1)
+        # normalized_similarity = similarity_matrix / diagonal_expanded
+        # moe_outp = torch.matmul(normalized_similarity, moe_outp)  # Out-of-place update
 
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
