@@ -357,8 +357,10 @@ class FMoE(nn.Module):
         # Reshape moe_inp and moe_outp
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1))
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
-        print(torch.norm(moe_outp, p=2))
-        moe_outp = (torch.tanh(moe_outp)+1)
+        norm_value = torch.norm(moe_outp, p=2).to('cpu')
+        print('norm_value = ', norm_value)
+        norm_value = norm_value + 1e-8  # Avoid division by zero
+        moe_outp = 1 / norm_value * (torch.tanh(moe_outp) + 1)
         moe_outp = moe_outp * moe_inp
         similarity_matrix = torch.matmul(moe_inp, moe_inp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
         # Use the lower triangular part of the similarity matrix
