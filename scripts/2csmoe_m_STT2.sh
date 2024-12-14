@@ -12,7 +12,7 @@
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
 eval "$(conda shell.bash hook)"
-conda activate moe
+conda activate /home/anhnd81/.conda/envs/moe
 cd /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE
 echo "Current path is $PATH"
 echo "Running"
