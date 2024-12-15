@@ -359,9 +359,9 @@ class FMoE(nn.Module):
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
         
         # Compute the norm for each token (along the last dimension, i.e., features)
-        norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)  # Shape: [batch_size, seq_length, 1]
+        # norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)  # Shape: [batch_size, seq_length, 1]
         # Normalize the tokens so that each token has a norm of 1
-        moe_inp = moe_inp / norms   # Shape: [batch_size, seq_length, dimension]
+        # moe_inp = moe_inp / norms   # Shape: [batch_size, seq_length, dimension]
         # moe_inp = moe_inp * (1/3)        
         
         similarity_matrix = torch.matmul(moe_inp, moe_outp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
