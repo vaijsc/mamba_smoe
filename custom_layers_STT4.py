@@ -358,19 +358,23 @@ class FMoE(nn.Module):
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1)) # [8, 256, 128]
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
         
-        # Compute the norm for each token (along the last dimension, i.e., features)
-        # norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)  # Shape: [batch_size, seq_length, 1]
-        # Normalize the tokens so that each token has a norm of 1
-        # moe_inp = moe_inp / norms   # Shape: [batch_size, seq_length, dimension]
-        # moe_inp = moe_inp * (1/3)        
-        
-        similarity_matrix = torch.matmul(moe_inp, moe_outp.transpose(1, 2))  # [batch_size, seq_length, seq_length]
+        # Compute the L2 norm in smaller steps to reduce memory usage
+        norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)
+
+        # Normalize the tokens
+        moe_inp = moe_inp / norms  # Element-wise division
+
+        # Scale moe_inp (keeping this operation out-of-place)
+        moe_inp = moe_inp * (1/3)  # Element-wise multiplication
+
+        # Compute the similarity matrix
+        similarity_matrix = torch.matmul(moe_inp, moe_outp.transpose(1, 2))
+
         # Use the lower triangular part of the similarity matrix
         similarity_matrix = torch.tril(similarity_matrix)
-        # diagonal = torch.diagonal(similarity_matrix, dim1=1, dim2=2)
-        # diagonal_expanded = diagonal.unsqueeze(-1)
-        # normalized_similarity = similarity_matrix / diagonal_expanded
-        moe_outp = torch.matmul(similarity_matrix, moe_inp)  # Out-of-place update
+
+        # Use the similarity matrix to update moe_outp (out-of-place operation)
+        moe_outp = torch.matmul(similarity_matrix, moe_inp)
 
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
