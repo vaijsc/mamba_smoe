@@ -359,7 +359,7 @@ class FMoE(nn.Module):
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
         
         # Compute the L2 norm in smaller steps to reduce memory usage
-        norms = 1/3 * (torch.norm(moe_inp, p=2, dim=-1, keepdim=True))
+        norms = 3 * (torch.norm(moe_inp, p=2, dim=-1, keepdim=True))
 
         # Normalize the tokens
         moe_inp = moe_inp / norms  # Element-wise division
