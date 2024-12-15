@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bsl
-#SBATCH --output=/lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/2csmoe_bsl_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/2csmoe_bsl.txt
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_bsl_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_bsl.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --nodelist=sdc2-hpc-dgx-a100-015
@@ -12,15 +12,15 @@
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
 eval "$(conda shell.bash hook)"
-conda activate moe
-cd /lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE
+conda activate /home/anhnd81/.conda/envs/moe
+cd /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE
 echo "Current path is $PATH"
 echo "Running"
 # nvidia-smi
 echo $CUDA_VISIBLE_DEVICES
 
 args="
---data /lustre/scratch/client/vinai/users/phinh2/workspace/dataset/wikitext \
+--data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext/  \
 --base_arch transformer \
 --architecture sgsgsgsgsgsg \
 --gate_name smoe \
@@ -40,7 +40,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/checkpoints/2csmoe_bsl.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bsl.pt \
 "
  
 # bs 48 -> 16 -> 32
