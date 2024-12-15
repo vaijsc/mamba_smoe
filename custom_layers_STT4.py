@@ -357,9 +357,12 @@ class FMoE(nn.Module):
         # Reshape moe_inp and moe_outp
         moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1)) 
         moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
+        
+        # Compute the L2 norm in smaller steps to reduce memory usage
+        norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)
 
         # Normalize the tokens
-        moe_inp = moe_inp / (torch.norm(moe_inp, p=2, dim=-1, keepdim=True))  # Element-wise division
+        moe_inp = moe_inp / norms  # Element-wise division
 
         # Scale moe_inp (keeping this operation out-of-place)
         moe_inp = moe_inp * (1/3)  # Element-wise multiplication
@@ -375,6 +378,7 @@ class FMoE(nn.Module):
 
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
+        
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
