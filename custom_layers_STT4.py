@@ -365,7 +365,7 @@ class FMoE(nn.Module):
         moe_inp = moe_inp / norms  # Element-wise division
 
         # Scale moe_inp (keeping this operation out-of-place)
-        moe_inp = moe_inp * (1/3)  # Element-wise multiplication
+        moe_inp *= (1/3)  # Element-wise multiplication
 
         # Compute the similarity matrix
         similarity_matrix = torch.matmul(moe_inp, moe_outp.transpose(1, 2))
@@ -378,7 +378,7 @@ class FMoE(nn.Module):
 
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
-        
+
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
