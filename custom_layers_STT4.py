@@ -355,20 +355,25 @@ class FMoE(nn.Module):
         batch_size = moe_inp.size(0) // seq_length
         # breakpoint()
         # Reshape moe_inp and moe_outp
-        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1)) 
-        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
-        
-        # Compute the L2 norm in smaller steps to reduce memory usage
-        norms = 3 * (torch.norm(moe_inp, p=2, dim=-1, keepdim=True))
+        chunk_size = 32  # Choose a smaller chunk size
+        similarity_matrix_chunks = []
 
-        # Normalize the tokens
-        moe_inp = moe_inp / norms  # Element-wise division
+        for i in range(0, batch_size, chunk_size):
+            moe_inp_chunk = moe_inp[i:i+chunk_size]
+            moe_outp_chunk = moe_outp[i:i+chunk_size]
+            
+            # Compute norms and normalize in smaller chunks
+            norms_chunk = 3 * (torch.norm(moe_inp_chunk, p=2, dim=-1, keepdim=True))
+            moe_inp_chunk = moe_inp_chunk / norms_chunk  # Normalization
+            
+            # Compute the similarity matrix for the chunk
+            similarity_matrix_chunk = torch.matmul(moe_inp_chunk, moe_outp_chunk.transpose(1, 2))
+            similarity_matrix_chunk = torch.tril(similarity_matrix_chunk)  # Lower triangular part
+            
+            similarity_matrix_chunks.append(similarity_matrix_chunk)
 
-        # Compute the similarity matrix
-        similarity_matrix = torch.matmul(moe_inp, moe_outp.transpose(1, 2))
-
-        # Use the lower triangular part of the similarity matrix
-        similarity_matrix = torch.tril(similarity_matrix)
+        # Concatenate the results
+        similarity_matrix = torch.cat(similarity_matrix_chunks, dim=0)
 
         # Use the similarity matrix to update moe_outp (out-of-place operation)
         moe_outp = torch.matmul(similarity_matrix, moe_inp)
