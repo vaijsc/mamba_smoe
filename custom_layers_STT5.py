@@ -349,13 +349,12 @@ class FMoE(nn.Module):
         moe_outp = tree.map_structure(bmm_func, moe_outp)
         seq_length = 256
         batch_size = moe_inp.size(0) // seq_length
-        moe_dim = moe_inp.size(1)
         # breakpoint()
         # Reshape moe_inp and moe_outp
-        moe_inp = moe_inp.view(batch_size, seq_length, moe_dim) # [8, 256, 128]
-        moe_outp = moe_outp.view(batch_size, seq_length, moe_dim)
-        moe_outp *= moe_inp 
-        # moe_outp = moe_outp * 1/2
+        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1)) # [8, 256, 128]
+        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
+        moe_outp = moe_outp * moe_inp 
+        moe_outp = moe_outp * 1/2
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
 
