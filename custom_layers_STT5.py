@@ -350,9 +350,7 @@ class FMoE(nn.Module):
         seq_length = 256
         batch_size = moe_inp.size(0) // seq_length
         # breakpoint()
-        # Reshape moe_inp and moe_outp
-        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1)) # [8, 256, 128]
-        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1))
+        # Reshape moe_inp and moe_outp    
         moe_outp = moe_outp * moe_inp 
         moe_outp = moe_outp * 1/2
         # Reshape moe_outp back to the original shape
