@@ -347,13 +347,8 @@ class FMoE(nn.Module):
         torch.Size([2048, 2, 128])
         """
         moe_outp = tree.map_structure(bmm_func, moe_outp)
-        seq_length = 256
-        batch_size = moe_inp.size(0) // seq_length
-        # breakpoint()
-        # Reshape moe_inp and moe_outp    
-        moe_outp = moe_outp * moe_inp 
-        moe_outp = moe_outp * 1/2
-        # Reshape moe_outp back to the original shape
+        # moe_outp = moe_outp * moe_inp 
+        # moe_outp = moe_outp * 1/2
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
 
         if self.slice_size > 1:
