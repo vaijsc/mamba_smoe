@@ -355,7 +355,7 @@ class FMoE(nn.Module):
         moe_inp = moe_inp.view(batch_size, seq_length, moe_dim) # [8, 256, 128]
         moe_outp = moe_outp.view(batch_size, seq_length, moe_dim)
         moe_outp *= moe_inp 
-        moe_outp = moe_outp * 1/2
+        # moe_outp = moe_outp * 1/2
         # Reshape moe_outp back to the original shape
         moe_outp = moe_outp.view(-1, moe_outp.size(2))
 
