@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=STT6
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_STT6_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_STT6.txt
+#SBATCH --job-name=STT6_1
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_STT6_1_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_STT6_1.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --nodelist=sdc2-hpc-dgx-a100-013
@@ -40,14 +40,14 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT6.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT6_1.pt \
 "
  
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10002 --nproc_per_node=2 --use_env train_STT6.py $args
+python -m torch.distributed.launch --master_port 10001 --nproc_per_node=2 --use_env train_STT6.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10002 --nproc_per_node=2 --use_env train_STT6.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10001 --nproc_per_node=2 --use_env train_STT6.py $args --resume --full-eval-mode
