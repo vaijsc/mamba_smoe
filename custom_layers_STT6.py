@@ -347,13 +347,11 @@ class FMoE(nn.Module):
         torch.Size([2048, 2, 128])
         """
         moe_outp = tree.map_structure(bmm_func, moe_outp)
-        # moe_inp [2048, 128]
-        # moe_outp [2048, 128]
         norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)
         # Normalize the tokens
         moe_inp = moe_inp / norms  # Element-wise division
-        moe_outp = moe_inp * moe_outp 
-        moe_outp = moe_outp * 0.5
+        moe_outp = moe_inp * moe_outp * 1/2
+       
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
