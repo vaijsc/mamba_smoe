@@ -361,8 +361,8 @@ class FMoE(nn.Module):
         add_params_broadcasted = self.add_params.expand(batch_size, -1, -1)  # [8, 352, 352]
         moe_inp_add = torch.sigmoid(torch.matmul(moe_inp, add_params_broadcasted))  # [8, 256, 352]
         similarity_matrix = torch.tril(torch.matmul(moe_inp, moe_outp.transpose(1,2))) # [8, 256, 256]
-        # normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
-        moe_outp = torch.matmul(similarity_matrix, moe_inp_add * moe_inp).view(-1, moe_outp.size(2))
+        normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
+        moe_outp = torch.matmul(normalized_similarity, moe_inp_add * moe_inp).view(-1, moe_outp.size(2))
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
