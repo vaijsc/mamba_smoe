@@ -194,6 +194,7 @@ def launch(
 
         # time storing
         t_sta = time.time()
+        print(f'train iteration {iter_no}')
         loss_train, data_pos[0], hid_cache[0] = train_iteration(
             model,
             model_params["load_balance"],
@@ -210,6 +211,7 @@ def launch(
         )
         elapsed = 1000 * (time.time() - t_sta) / nb_batches_per_iter
         with torch.no_grad():
+            print(f'eval iteration {iter_no}')
             loss_val, data_pos[1], hid_cache[1] = train_iteration(
                 model,
                 model_params["load_balance"],

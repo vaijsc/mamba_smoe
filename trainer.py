@@ -62,7 +62,7 @@ def _train_batch(
         for split_ind in range(batch_split):
             split_slice = slice(split_ind * split_size, (split_ind + 1) * split_size) # [0, 8, :]
             split_h_cache = [h[split_slice, :, :] for h in h_cache]
-            print(f'split_ind {split_ind}')
+            # print(f'split_ind {split_ind}')
             split_loss_value, split_h_cache = _train_step(
                 model,
                 load_balance,
@@ -126,7 +126,7 @@ def train_iteration(
         actual_nb_batches_per_iter += 1
         X = data[:, train_pos : train_pos + block_size].contiguous()
         Y = data[:, train_pos + 1 : train_pos + block_size + 1].contiguous()
-        print(f'train iteration {iter}')
+        # print(f'train iteration {iter} \n')
         loss, h_cache = _train_batch(
             model=model,
             load_balance=load_balance,
@@ -172,7 +172,7 @@ def full_eval(model, optimizer, scheduler, data, block_size, hidden_size):
         actual_nb_batches_per_iter += 1
         X = data[:, train_pos : train_pos + block_size].contiguous()
         Y = data[:, train_pos + 1 : train_pos + block_size + 1].contiguous()
-        print(f'eval iteration {iter}')
+        # print(f'eval iteration {iter}')
         loss, h_cache = _train_batch(
             model=model,
             load_balance=0,
