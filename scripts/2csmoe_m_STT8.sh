@@ -33,7 +33,7 @@ args="
 --dropout 0.1 \
 --load_balance 0.01 \
 --optim adam \
---lr 0.0007 \
+--lr 0.00007 \
 --lr-warmup 4000 \
 --niter 80 \
 --batch-sz 48 \
@@ -43,6 +43,7 @@ args="
 --checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT8.pt \
 "
  
+# lr 0.0007
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
