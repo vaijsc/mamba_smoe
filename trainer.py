@@ -82,8 +82,8 @@ def _train_batch(
         if scheduler is not None:
             scheduler.step()
         optimizer.step() # after finish batch_split
-        breakpoint()
-        print(scheduler.get_last_lr())
+        # breakpoint()
+        # print(scheduler.get_last_lr())
         # make sure span parameters are in a correct range
         if model.module.layers[0].attn.attn.adapt_span_enabled:
             for layer in model.module.layers:
