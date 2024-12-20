@@ -123,9 +123,13 @@ def _get_grad_requiring_params(model):
 
 
 def _get_optimizer(model, optim, lr: float, momentum: float, grad_clip: float):
+    # print('lr = ', lr)
     if optim == "sgd":
         return torch.optim.SGD(
-            _get_grad_requiring_params(model), lr=lr, momentum=momentum
+            _get_grad_requiring_params(model),
+            lr=lr,
+            # momentum=0
+            momentum=momentum
         )
     elif optim == "adam":
         return torch.optim.Adam(
@@ -135,7 +139,7 @@ def _get_optimizer(model, optim, lr: float, momentum: float, grad_clip: float):
         )
     else:
         raise RuntimeError("wrong type of optimizer - must be 'sgd' or 'adam'")
-
+    # print(optim)
 
 def _get_scheduler(optimizer, lr_warmup):
     if lr_warmup > 0:
@@ -153,7 +157,9 @@ def get_optimizer_and_scheduler(model, optim_params):
         momentum=optim_params["momentum"],
         grad_clip=optim_params["grad_clip"],
     )
+    
     scheduler = _get_scheduler(optimizer=optimizer, lr_warmup=optim_params["lr_warmup"])
+    
     return optimizer, scheduler
 
 

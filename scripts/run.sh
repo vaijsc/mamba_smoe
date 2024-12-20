@@ -21,9 +21,9 @@ args="
 --attn-span 256 \
 --dropout 0.7 \
 --load_balance 0.01 \
---optim adam \
+--optim sgd \
 --lr 0.0007 \
---lr-warmup 3000 \
+--lr-warmup 0 \
 --niter 60 \
 --batch-sz 16 \
 --batch-split 2 \
@@ -36,9 +36,9 @@ args="
 #block_sz: shape of input
 echo "Training ..."
 #CUDA_VISIBLE_DEVICES='0,1,2,3'
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=2 --use_env train_2.py $args #\
+python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
-echo "Evaluation ..."
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=2 --use_env train_2.py $args --resume --full-eval-mode #\ 
+# echo "Evaluation ..."
+# python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode #\ 
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1

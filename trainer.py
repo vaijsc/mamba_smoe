@@ -38,7 +38,7 @@ def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
                         balance_loss += m.loss
             loss += load_balance * balance_loss # load balancing 
         (loss / loss_div).backward(retain_graph=True)
-        print('gradient = ', (loss/loss_div).grad)
+        # print('gradient = ', (loss/loss_div).grad)
     return loss_value, h_cache
 
 
@@ -82,7 +82,8 @@ def _train_batch(
         if scheduler is not None:
             scheduler.step()
         optimizer.step() # after finish batch_split
-
+        breakpoint()
+        print(scheduler.get_last_lr())
         # make sure span parameters are in a correct range
         if model.module.layers[0].attn.attn.adapt_span_enabled:
             for layer in model.module.layers:
@@ -148,7 +149,7 @@ def train_iteration(
                 h.fill_(0)
 
     loss_all = loss_all / actual_nb_batches_per_iter
-    print('loss_all train = ', loss_all)
+    # print('loss_all train = ', loss_all)
     return loss_all, train_pos, h_cache
 
 
@@ -192,5 +193,5 @@ def full_eval(model, optimizer, scheduler, data, block_size, hidden_size):
             break
 
     loss_all = loss_all / actual_nb_batches_per_iter
-    print('loss_all eval = ', loss_all)
+    # print('loss_all eval = ', loss_all)
     return loss_all
