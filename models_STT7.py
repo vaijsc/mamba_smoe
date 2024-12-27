@@ -148,7 +148,6 @@ class MultiHeadSeqAttention(nn.Module):
         K = self.nb_heads # 8
         D = self.head_dim # 16
         M = query.size(1) # 256
-
         query = self.proj_query(query) # 
         query = self.head_reshape(query) # torch.Size([64, 256, 16])
         value1 = value
@@ -156,8 +155,7 @@ class MultiHeadSeqAttention(nn.Module):
         value = self.head_reshape(value) # torch.Size([64, 512, 16])
         key = self.proj_key(key) # 
         key = self.head_reshape(key) # torch.Size([64, 512, 16])
-
-        out = self.attn(query, key, value, key_pe)  # B_K x M x D
+        out = self.attn(query, key, value, key_pe, value1)  # B_K x M x D
         out = out.view(B, K, M, D)  # B x K x M x D torch.Size([32, 8, 256, 16])
         out = out.transpose(1, 2).contiguous()  # B x M x K x D 
         out = out.view(B, M, -1)  # B x M x K_D
