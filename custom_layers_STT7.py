@@ -347,16 +347,6 @@ class FMoE(nn.Module):
         torch.Size([2048, 2, 128])
         """
         moe_outp = tree.map_structure(bmm_func, moe_outp)
-        
-        # moe_inp [2048, 128]
-        # moe_outp [2048, 128]       
-        seq_length = 256
-        batch_size = moe_inp.size(0) // seq_length
-        moe_inp = moe_inp.view(batch_size, seq_length, moe_inp.size(1)) # [8, 256, 352]
-        moe_outp = moe_outp.view(batch_size, seq_length, moe_outp.size(1)) # [8, 256, 352]
-        similarity_matrix = torch.tril(torch.matmul(moe_inp, moe_outp.transpose(1,2))) # [8, 256, 256]
-        # normalized_similarity = F.softmax(similarity_matrix, dim=-1)  # [batch_size, seq_length, seq_length]
-        moe_outp = torch.matmul(similarity_matrix, moe_inp).view(-1, moe_outp.size(2))
         if self.slice_size > 1:
 
             def all_gather_func(tensor):

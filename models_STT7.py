@@ -55,7 +55,7 @@ class SeqAttention(nn.Module):
                 attn_span=attn_span, **adapt_span_params, **kargs
             )
 
-    def forward(self, query, key, value, key_pe):
+    def forward(self, query, key, value, key_pe, value1):
         # query size = B x M x H
         # key, value sizes = B x (M+L) x H
         # import ipdb; ipdb.set_trace()
@@ -100,11 +100,8 @@ class SeqAttention(nn.Module):
             # trim attention lengths according to the learned span
             attn = self.adaptive_span(attn)
         attn = self.dropout(attn)  # B x M X L_pos
-
         attn_cont = _skew(attn, 0)  # B x M X (L+M)
-        # attn_cont torch.Size([256, 256, 512])
-        # value torch.Size([256, 512, 16])
-        out = torch.matmul(attn_cont, value)  # B x M x H
+        out = torch.matmul(attn_cont, torch.nn.Softplus(value) * value1)  # B x M x H
         return out
 
     def get_cache_size(self):
@@ -154,6 +151,7 @@ class MultiHeadSeqAttention(nn.Module):
 
         query = self.proj_query(query) # 
         query = self.head_reshape(query) # torch.Size([64, 256, 16])
+        value1 = value
         value = self.proj_val(value) # 
         value = self.head_reshape(value) # torch.Size([64, 512, 16])
         key = self.proj_key(key) # 
@@ -187,7 +185,7 @@ class MultiHeadSeqSymAttention(nn.Module):
         x = x.view(-1, x.size(-2), x.size(-1))  # B_K x (M+L) x D
         return x
 
-    def forward(self, query, key, value, key_pe):
+    def forward(self, query, key, value, key_pe, value1):
         # import ipdb; ipdb.set_trace()
         B = query.size(0)
         K = self.nb_heads
@@ -201,7 +199,7 @@ class MultiHeadSeqSymAttention(nn.Module):
         key = self.proj_key(key)
         key = self.head_reshape(key)
 
-        out = self.attn(query, key, value, key_pe)  # B_K x M x D
+        out = self.attn(query, key, value, key_pe, value1)  # B_K x M x D
         out = out.view(B, K, M, D)  # B x K x M x D
         out = out.transpose(1, 2).contiguous()  # B x M x K x D
         out = out.view(B, M, -1)  # B x M x K_D
