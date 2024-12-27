@@ -101,7 +101,7 @@ class SeqAttention(nn.Module):
             attn = self.adaptive_span(attn)
         attn = self.dropout(attn)  # B x M X L_pos
         attn_cont = _skew(attn, 0)  # B x M X (L+M)
-        out = torch.matmul(attn_cont, torch.nn.Softplus(value) * value1)  # B x M x H
+        out = torch.matmul(attn_cont, torch.nn.functional.softplus(value) * value1)  # B x M x H
         return out
 
     def get_cache_size(self):
@@ -133,7 +133,7 @@ class MultiHeadSeqAttention(nn.Module):
         return x
 
     def forward(self, query, key, value, key_pe):
-        # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
         """
         ipdb> print(query.shape)
         torch.Size([8, 256, 128])
@@ -151,6 +151,7 @@ class MultiHeadSeqAttention(nn.Module):
         query = self.proj_query(query) # 
         query = self.head_reshape(query) # torch.Size([64, 256, 16])
         value1 = value
+        value1 = self.head_reshape(value1)
         value = self.proj_val(value) # 
         value = self.head_reshape(value) # torch.Size([64, 512, 16])
         key = self.proj_key(key) # 
