@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=lr1
+#SBATCH --job-name=blbs32
 #SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_lr1_err.txt
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_lr1.txt
 #SBATCH --nodes=1
