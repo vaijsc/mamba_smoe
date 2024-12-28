@@ -133,7 +133,6 @@ class MultiHeadSeqAttention(nn.Module):
         return x
 
     def forward(self, query, key, value, key_pe):
-        # import ipdb; ipdb.set_trace()
         """
         ipdb> print(query.shape)
         torch.Size([8, 256, 128])
