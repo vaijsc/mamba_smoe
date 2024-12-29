@@ -50,4 +50,4 @@ args="
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10006 --nproc_per_node=2 --use_env train_STT7.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10006 --nproc_per_node=1 --use_env train_STT7.py $args --resume --full-eval-mode
