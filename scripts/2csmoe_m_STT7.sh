@@ -44,9 +44,9 @@ args="
 "
  
 # bs 48 -> 16 -> 32
-echo "Training ..."
+# echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10006 --nproc_per_node=2 --use_env train_STT7.py $args
+# python -m torch.distributed.launch --master_port 10006 --nproc_per_node=2 --use_env train_STT7.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
