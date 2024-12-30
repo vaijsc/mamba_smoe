@@ -186,8 +186,8 @@ class FMoE(nn.Module):
         self.mask_dict = mask_dict
         self.moe_group = moe_group
         
-        self.weights_in = nn.Linear(128, 8)
-        self.weights_out = nn.Linear(8, 128)
+        self.weights_in = nn.Linear(self.d_model, 8)
+        self.weights_out = nn.Linear(8, self.d_model)
         
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
