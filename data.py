@@ -8,7 +8,9 @@ import tqdm
 def _tokenize(text_path, dictionary_to_update):
     """Tokenizes a text file."""
     print("Tokenizing {}".format(text_path))
+    breakpoint()
     assert os.path.exists(text_path)
+
 
     nb_tokens_in_dictionary = len(dictionary_to_update)
 
