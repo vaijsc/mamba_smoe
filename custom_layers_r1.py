@@ -236,7 +236,7 @@ class FMoE(nn.Module):
         torch.Size([2048, 128])
         
         """
-        
+        import ipdb; ipdb.set_trace()
         moe_inp = self.weights_in(moe_inp)
         moe_inp = self.weights_out(moe_inp)
         moe_inp_batch_size = tree.flatten(
