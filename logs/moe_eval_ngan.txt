@@ -1,0 +1,196 @@
+/home/anhnd81/.conda/envs/moe/lib/python3.10/site-packages/torch/distributed/launch.py:181: FutureWarning: The module torch.distributed.launch is deprecated
+and will be removed in future. Use torchrun.
+Note that --use-env is set by default in torchrun.
+If your script expects `--local-rank` argument to be set, please
+change it to read from `os.environ['LOCAL_RANK']` instead. See 
+https://pytorch.org/docs/stable/distributed.html#launch-utility for 
+further instructions
+
+  warnings.warn(
+WARNING:torch.distributed.run:
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+my rank=0 local_rank=0my rank=1 local_rank=1
+
+data_params:	 {'data_path': '/lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/', 'data_name': 'wikitext-103'}
+model_params:	 {'hidden_size': 352, 'inner_hidden_size': 352, 'nb_layers': 6, 'block_size': 512, 'nb_heads': 8, 'attn_span': 1024, 'dropout': 0.1, 'architecture': 'sgsgsgsgsgsg', 'base_arch': 'transformer', 'smoe_dropout': False, 'optimal_policy': False, 'load_balance': 0.01, 'moe_top_k': 2, 'freq': 0.03, 'freq_type': 'fix', 'alpha': 1.0, 'gate_name': 'smoe', 'act_experts': 'shuffle', 'g_blance': False, 'opt_blance': False, 'combine_gate': False, 'opt_loss': 'mse', 'gamma1': 1.0, 'gamma2': 1.0, 'mu': 0.9, 'beta1': 0.9, 'beta2': 0.999}
+optim_params:	 {'lr': 0.0007, 'momentum': 0.9, 'optim': 'adam', 'lr_warmup': 4000, 'grad_clip': 0}
+trainer_params:	 {'batch_size': 32, 'batch_split': 2, 'nb_batches_per_iter': 1000, 'nb_iter': 80, 'checkpoint_path': '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT7.pt', 'resume': True, 'pretrained_weight': '', 'full_eval_mode': True}
+adapt_span_params:	 {'adapt_span_enabled': False, 'adapt_span_loss': 0, 'adapt_span_ramp': 32, 'adapt_span_init': 0, 'adapt_span_cache': False}
+Loading an existing corpus file from /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/corpus.pt
+Loading an existing corpus file from /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/corpus.pt
+TransformerSeq(
+  (in_emb): Embedding(267735, 352)
+  (out_emb): Linear(in_features=352, out_features=267735, bias=True)
+  (layers): ModuleList(
+    (0-5): 6 x TransformerSeqLayer(
+      (attn): MultiHeadSeqAttention(
+        (attn): SeqAttention(
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (proj_query): Linear(in_features=352, out_features=352, bias=False)
+        (proj_out): Linear(in_features=352, out_features=352, bias=False)
+        (proj_val): Linear(in_features=352, out_features=352, bias=False)
+        (proj_key): Linear(in_features=352, out_features=352, bias=False)
+      )
+      (smoe): CustomizedMoEPositionwiseFF(
+        (gate): CustomNaiveGate_Balance_SMoE(
+          (gate): Linear(in_features=352, out_features=16, bias=True)
+        )
+        (experts): _Expert(
+          (htoh4): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+          (h4toh): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+          (activation): Sequential(
+            (0): ReLU()
+            (1): Dropout(p=0.1, inplace=False)
+          )
+        )
+        (layer_norm): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (norm1): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+      (norm2): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+      (norm3): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+)
+TransformerSeq(
+  (in_emb): Embedding(267735, 352)
+  (out_emb): Linear(in_features=352, out_features=267735, bias=True)
+  (layers): ModuleList(
+    (0-5): 6 x TransformerSeqLayer(
+      (attn): MultiHeadSeqAttention(
+        (attn): SeqAttention(
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (proj_query): Linear(in_features=352, out_features=352, bias=False)
+        (proj_out): Linear(in_features=352, out_features=352, bias=False)
+        (proj_val): Linear(in_features=352, out_features=352, bias=False)
+        (proj_key): Linear(in_features=352, out_features=352, bias=False)
+      )
+      (smoe): CustomizedMoEPositionwiseFF(
+        (gate): CustomNaiveGate_Balance_SMoE(
+          (gate): Linear(in_features=352, out_features=16, bias=True)
+        )
+        (experts): _Expert(
+          (htoh4): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+          (h4toh): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+          (activation): Sequential(
+            (0): ReLU()
+            (1): Dropout(p=0.1, inplace=False)
+          )
+        )
+        (layer_norm): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (norm1): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+      (norm2): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+      (norm3): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+)
+nb_parameters=215.68Mnb_parameters=215.68M
+
+Experiment dir : /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txtExperiment dir : /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt
+
+Experiment dir : /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/experiments/2csmoe_STT7Experiment dir : /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/experiments/2csmoe_STT7
+
+Training Parameters:
+ {'batch_size': 32, 'batch_split': 2, 'nb_batches_per_iter': 1000, 'nb_iter': 80, 'checkpoint_path': '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT7.pt', 'resume': True, 'pretrained_weight': '', 'full_eval_mode': True}
+Training Parameters:
+ {'batch_size': 32, 'batch_split': 2, 'nb_batches_per_iter': 1000, 'nb_iter': 80, 'checkpoint_path': '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT7.pt', 'resume': True, 'pretrained_weight': '', 'full_eval_mode': True}
+Models Parameters:
+ {'hidden_size': 352, 'inner_hidden_size': 352, 'nb_layers': 6, 'block_size': 512, 'nb_heads': 8, 'attn_span': 1024, 'dropout': 0.1, 'architecture': 'sgsgsgsgsgsg', 'base_arch': 'transformer', 'smoe_dropout': False, 'optimal_policy': False, 'load_balance': 0.01, 'moe_top_k': 2, 'freq': 0.03, 'freq_type': 'fix', 'alpha': 1.0, 'gate_name': 'smoe', 'act_experts': 'shuffle', 'g_blance': False, 'opt_blance': False, 'combine_gate': False, 'opt_loss': 'mse', 'gamma1': 1.0, 'gamma2': 1.0, 'mu': 0.9, 'beta1': 0.9, 'beta2': 0.999}
+Models Parameters:
+ {'hidden_size': 352, 'inner_hidden_size': 352, 'nb_layers': 6, 'block_size': 512, 'nb_heads': 8, 'attn_span': 1024, 'dropout': 0.1, 'architecture': 'sgsgsgsgsgsg', 'base_arch': 'transformer', 'smoe_dropout': False, 'optimal_policy': False, 'load_balance': 0.01, 'moe_top_k': 2, 'freq': 0.03, 'freq_type': 'fix', 'alpha': 1.0, 'gate_name': 'smoe', 'act_experts': 'shuffle', 'g_blance': False, 'opt_blance': False, 'combine_gate': False, 'opt_loss': 'mse', 'gamma1': 1.0, 'gamma2': 1.0, 'mu': 0.9, 'beta1': 0.9, 'beta2': 0.999}
+2024-12-29 12:50:26.191412
+2024-12-29 12:50:26.191651
+DistributedDataParallel(
+  (module): TransformerSeq(
+    (in_emb): Embedding(267735, 352)
+    (out_emb): Linear(in_features=352, out_features=267735, bias=True)
+    (layers): ModuleList(
+      (0-5): 6 x TransformerSeqLayer(
+        (attn): MultiHeadSeqAttention(
+          (attn): SeqAttention(
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (proj_query): Linear(in_features=352, out_features=352, bias=False)
+          (proj_out): Linear(in_features=352, out_features=352, bias=False)
+          (proj_val): Linear(in_features=352, out_features=352, bias=False)
+          (proj_key): Linear(in_features=352, out_features=352, bias=False)
+        )
+        (smoe): CustomizedMoEPositionwiseFF(
+          (gate): CustomNaiveGate_Balance_SMoE(
+            (gate): Linear(in_features=352, out_features=16, bias=True)
+          )
+          (experts): _Expert(
+            (htoh4): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+            (h4toh): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+            (activation): Sequential(
+              (0): ReLU()
+              (1): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (layer_norm): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+        (norm3): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+      )
+    )
+  )
+)
+DistributedDataParallel(
+  (module): TransformerSeq(
+    (in_emb): Embedding(267735, 352)
+    (out_emb): Linear(in_features=352, out_features=267735, bias=True)
+    (layers): ModuleList(
+      (0-5): 6 x TransformerSeqLayer(
+        (attn): MultiHeadSeqAttention(
+          (attn): SeqAttention(
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (proj_query): Linear(in_features=352, out_features=352, bias=False)
+          (proj_out): Linear(in_features=352, out_features=352, bias=False)
+          (proj_val): Linear(in_features=352, out_features=352, bias=False)
+          (proj_key): Linear(in_features=352, out_features=352, bias=False)
+        )
+        (smoe): CustomizedMoEPositionwiseFF(
+          (gate): CustomNaiveGate_Balance_SMoE(
+            (gate): Linear(in_features=352, out_features=16, bias=True)
+          )
+          (experts): _Expert(
+            (htoh4): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+            (h4toh): FMoELinear(num_expert=16, in_features=352,         out_features=352, bias=True, rank=0)
+            (activation): Sequential(
+              (0): ReLU()
+              (1): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (layer_norm): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+        (norm3): LayerNorm((352,), eps=1e-05, elementwise_affine=True)
+      )
+    )
+  )
+)
+Total of Parameters: 215679863
+Total of Parameters: 215679863
+Total of Trainable Parameters: 215679863
+Total of Trainable Parameters: 215679863
+/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT7.pt
+/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT7.pt
+loading from a checkpoint at /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT7.pt
+loading from a checkpoint at /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT7.pt
+  0%|          | 0/14 [00:00<?, ?it/s]  0%|          | 0/14 [00:00<?, ?it/s]  7%|▋         | 1/14 [00:02<00:29,  2.27s/it]  7%|▋         | 1/14 [00:02<00:33,  2.54s/it] 14%|█▍        | 2/14 [00:02<00:13,  1.11s/it] 14%|█▍        | 2/14 [00:02<00:14,  1.22s/it] 21%|██▏       | 3/14 [00:02<00:08,  1.37it/s] 21%|██▏       | 3/14 [00:03<00:08,  1.26it/s] 29%|██▊       | 4/14 [00:03<00:05,  1.78it/s] 29%|██▊       | 4/14 [00:03<00:05,  1.68it/s] 36%|███▌      | 5/14 [00:03<00:04,  2.17it/s] 36%|███▌      | 5/14 [00:03<00:04,  2.06it/s] 43%|████▎     | 6/14 [00:03<00:03,  2.50it/s] 43%|████▎     | 6/14 [00:03<00:03,  2.44it/s] 50%|█████     | 7/14 [00:04<00:02,  2.71it/s] 50%|█████     | 7/14 [00:04<00:02,  2.67it/s] 57%|█████▋    | 8/14 [00:04<00:02,  2.96it/s] 57%|█████▋    | 8/14 [00:04<00:02,  2.94it/s] 64%|██████▍   | 9/14 [00:04<00:01,  3.06it/s] 64%|██████▍   | 9/14 [00:04<00:01,  3.07it/s] 71%|███████▏  | 10/14 [00:04<00:01,  3.19it/s] 71%|███████▏  | 10/14 [00:05<00:01,  3.20it/s] 79%|███████▊  | 11/14 [00:05<00:00,  3.36it/s] 79%|███████▊  | 11/14 [00:05<00:00,  3.37it/s] 86%|████████▌ | 12/14 [00:05<00:00,  3.57it/s] 86%|████████▌ | 12/14 [00:05<00:00,  3.58it/s] 86%|████████▌ | 12/14 [00:05<00:00,  2.03it/s]
+ 86%|████████▌ | 12/14 [00:05<00:00,  2.11it/s]
+  0%|          | 0/15 [00:00<?, ?it/s]  0%|          | 0/15 [00:00<?, ?it/s]  7%|▋         | 1/15 [00:00<00:03,  3.54it/s]  7%|▋         | 1/15 [00:00<00:03,  3.53it/s] 13%|█▎        | 2/15 [00:00<00:03,  3.47it/s] 13%|█▎        | 2/15 [00:00<00:03,  3.46it/s] 20%|██        | 3/15 [00:00<00:03,  3.49it/s] 20%|██        | 3/15 [00:00<00:03,  3.48it/s] 27%|██▋       | 4/15 [00:01<00:03,  3.46it/s] 27%|██▋       | 4/15 [00:01<00:03,  3.43it/s] 33%|███▎      | 5/15 [00:01<00:02,  3.42it/s] 33%|███▎      | 5/15 [00:01<00:02,  3.40it/s] 40%|████      | 6/15 [00:01<00:02,  3.45it/s] 40%|████      | 6/15 [00:01<00:02,  3.45it/s] 47%|████▋     | 7/15 [00:02<00:02,  3.45it/s] 47%|████▋     | 7/15 [00:02<00:02,  3.45it/s] 53%|█████▎    | 8/15 [00:02<00:02,  3.48it/s] 53%|█████▎    | 8/15 [00:02<00:02,  3.48it/s] 60%|██████    | 9/15 [00:02<00:01,  3.46it/s] 60%|██████    | 9/15 [00:02<00:01,  3.48it/s] 67%|██████▋   | 10/15 [00:02<00:01,  3.49it/s] 67%|██████▋   | 10/15 [00:02<00:01,  3.46it/s] 73%|███████▎  | 11/15 [00:03<00:01,  3.64it/s] 73%|███████▎  | 11/15 [00:03<00:01,  3.30it/s] 80%|████████  | 12/15 [00:03<00:00,  3.84it/s] 80%|████████  | 12/15 [00:03<00:00,  3.30it/s] 87%|████████▋ | 13/15 [00:03<00:00,  3.69it/s] 87%|████████▋ | 13/15 [00:03<00:00,  3.34it/s] 87%|████████▋ | 13/15 [00:03<00:00,  3.30it/s]
+ 87%|████████▋ | 13/15 [00:04<00:00,  3.16it/s]
+Val: 38.822 PPL
+Test: 40.527 PPL
