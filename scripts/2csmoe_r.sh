@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=r
+#SBATCH --job-name=r1-4
 #SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_r_err.txt
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_r.txt
 #SBATCH --nodes=1
