@@ -86,6 +86,7 @@ def _fmoe_general_global_forward(
     x = expert_fn(x, fwd_expert_count)
     # torch.Size([16384, 128])
     out_batch_size = tree.flatten(inp)[0].shape[0]
+    # 
     if len(gate.shape) == 2:
         out_batch_size *= gate.shape[1]
 
@@ -148,6 +149,7 @@ class FMoE(nn.Module):
         moe_group=None,
         moe_top_k=2,
         gate=NaiveGate,
+        # gate1 = ExpertGate,
         expert=None,
         gate_hook=None,
         mask=None,
@@ -180,11 +182,12 @@ class FMoE(nn.Module):
         else:
             self.experts_fused = True
 
-        self.gate = gate(d_model, num_expert, world_size, moe_top_k)
+        self.gate = gate(d_model // 2, num_expert, world_size, moe_top_k)
         self.gate_hook = gate_hook
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
+
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
         r"""
@@ -205,7 +208,7 @@ class FMoE(nn.Module):
         return torch.cat(outputs, dim=0)
 
     def mark_parallel_comm(self, expert_dp_comm="none"):
-        # # import ipdb ipdb.set_trace()
+        # import ipdb ipdb.set_trace()
         r"""
         Automatically mark the data parallel comms of the parameters within the
         module. This can be typically called at the end of the __init__ function
@@ -255,12 +258,23 @@ class FMoE(nn.Module):
 
             moe_inp = tree.map_structure(slice_func, moe_inp)
         
-        # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
+        
+        assert moe_inp.shape[1] % 2 == 0
+        split_dim = moe_inp.shape[1] // 2
+        moe_inp_1, moe_inp_2 = moe_inp[:, :split_dim], moe_inp[:, split_dim:]
+        """
+        self.gate
+        CustomNaiveGate_Balance_SMoE(
+        (gate): Linear(in_features=128, out_features=16, bias=True)
+        )
+        """
         """
         ipdb> moe_inp.shape
         torch.Size([2048, 128])
         """
-        gate_top_k_idx, gate_score = self.gate(moe_inp)
+        gate_top_k_idx, gate_score = self.gate(moe_inp_1)
+
         """
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
@@ -282,11 +296,11 @@ class FMoE(nn.Module):
                 return tensor
 
             mask = self.mask.view(-1)
-            moe_inp = tree.map_structure(delete_mask_func, moe_inp)
+            moe_inp = tree.map_structure(delete_mask_func, moe_inp_1)
             gate_top_k_idx = gate_top_k_idx[mask == 0, :]
 
         fwd = _fmoe_general_global_forward(
-            moe_inp,
+            moe_inp_1,
             gate_top_k_idx,
             self.expert_fn,
             self.num_expert,
@@ -326,7 +340,7 @@ class FMoE(nn.Module):
                 tensor = tensor.view(-1, self.top_k, dim)
                 return tensor
 
-            moe_outp = tree.map_structure(view_func, fwd)
+            moe_outp_1 = tree.map_structure(view_func, fwd)
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
@@ -346,7 +360,9 @@ class FMoE(nn.Module):
         ipdb> moe_outp.shape
         torch.Size([2048, 2, 128])
         """
-        moe_outp = tree.map_structure(bmm_func, moe_outp)
+        moe_outp_1 = tree.map_structure(bmm_func, moe_outp_1)
+
+
         if self.slice_size > 1:
 
             def all_gather_func(tensor):

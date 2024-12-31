@@ -1,0 +1,37 @@
+inp 
+torch.Size([16, 256, 128]) 
+-> torch.Size([4096, 128])
+self.dense_moe_flag = False
+gate 
+torch.Size([4096, 16])
+import torch.nn.functional.F
+F.one_hot(gate_top_k_idx)
+gate_score 
+torch.Size([4096, 2])
+self.g_blance 
+False
+return_all_scores
+False
+gate_top_k_idx
+torch.Size([4096, 2])
+
+def forward(self, inp, fwd_expert_count):
+    import ipdb; ipdb.set_trace()
+    r"""
+    First expand input to 4h (the hidden size is variable, but is called h4
+    for convenience). Then perform activation. Finally shirink back to h.
+    """
+    # inp torch.Size([8192, 128]), fwd_expert_count shape 16
+    # tensor([619, 517, 369, 712, 366, 315, 635, 354, 313, 862, 468, 718, 635, 596,
+        329, 384])
+    x = self.htoh4(inp, fwd_expert_count)
+    x = self.activation(x)
+    x = self.h4toh(x, fwd_expert_count) # torch.Size([16384, 128])
+    return x
+
+ipdb> self.activation
+Sequential(
+  (0): ReLU()
+  (1): Dropout(p=0.7, inplace=False)
+)
+

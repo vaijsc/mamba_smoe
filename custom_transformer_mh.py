@@ -21,7 +21,6 @@ class _Expert(nn.Module):
         self.activation = activation
 
     def forward(self, inp, fwd_expert_count):
-        # import ipdb ipdb.set_trace()
         r"""
         First expand input to 4h (the hidden size is variable, but is called h4
         for convenience). Then perform activation. Finally shirink back to h.
