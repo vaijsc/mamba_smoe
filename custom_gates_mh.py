@@ -4,7 +4,7 @@ import math, random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import tree
 import pdb
 import numpy as np
 from fmoe.gates.base_gate import BaseGate
@@ -17,14 +17,14 @@ __all__ = [
 
 
 class CustomNaiveGate_Balance_SMoE(BaseGate):
-    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=False):
+    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=False, flag=False):
         super().__init__(num_expert, world_size)
         self.gate = nn.Linear(d_model, self.tot_expert)
         self.top_k = top_k
         self.dense_moe_flag = False
         self.g_blance = g_blance
         self.loss = None
-
+        self.flag = flag
     def set_load_balance(self, gate, gate_top_k_idx):
 
         score = F.softmax(gate, dim=-1)
@@ -43,8 +43,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         loss = (fraction_expert * prob_expert).sum() * self.tot_expert
         self.loss = loss
 
-    def forward(self, inp, return_all_scores=False):
-        # import ipdb; ipdb.set_trace()
+    def forward(self, inp, return_all_scores=False, flag=False, capacity_factor=2):
         gate = self.gate(inp)
         """
         ipdb> self.gate(inp).shape
@@ -57,25 +56,40 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             gate_top_k_val = gate_top_k_val.view(-1, self.tot_expert)
         else:
-            gate_top_k_val, gate_top_k_idx = torch.topk(
-                gate, k=self.top_k, dim=-1, largest=True, sorted=False
-            )  # [.. x top_k] 
-            gate_top_k_val = gate_top_k_val.view(-1, self.top_k)  # (BxL) x 1 x top_k
+            if not flag:
+                gate_top_k_val, gate_top_k_idx = torch.topk(
+                    gate, k=self.top_k, dim=-1, largest=True, sorted=False
+                )  # [.. x top_k] 
+                gate_top_k_val = gate_top_k_val.view(-1, self.top_k)  # (BxL) x 1 x top_k
+            else:
+                # import ipdb; ipdb.set_trace()
+                inp_flat = tree.flatten(inp)[0]
+                num_tokens, n_embd = inp_flat.shape
+                # Adjust top-k per expert based on capacity factor
+                top_k = min(int(capacity_factor * num_tokens / self.tot_expert), num_tokens)
+                gate_top_k_val, gate_top_k_idx = torch.topk(
+                    gate.transpose(0,1), k=top_k, dim=-1, largest=True, sorted=False
+                )  # [.. x top_k] 
+                gate_top_k_val = gate_top_k_val.view(-1, top_k)  # (BxL) x 1 x top_k
+                
         """
         ipdb> gate_top_k_val.shape
         torch.Size([2048, 2])
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
         """
-        
-        gate_score = F.softmax(gate_top_k_val, dim=-1)
+        if not flag:
+            gate_score = F.softmax(gate_top_k_val, dim=-1)
         if self.g_blance:
             self.set_load_balance(gate, gate_top_k_idx)
 
         if return_all_scores:
             return gate_top_k_idx, gate_score, gate
         ### modify
-        return gate_top_k_idx, gate_score
+        if not flag:
+            return gate_top_k_idx, gate_score
+        else:
+            return gate_top_k_idx, gate_top_k_val 
 
 class CustomNaiveGate_Balance_XMoE(BaseGate):
     def __init__(self, d_model, num_expert, world_size, top_k=2, g_balance=False):

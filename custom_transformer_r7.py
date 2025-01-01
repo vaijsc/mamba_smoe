@@ -3,8 +3,8 @@ import argparse
 import math, random
 import torch
 import torch.nn as nn
-from custom_layers_mh import FMoE
-from custom_layers_mh import FMoELinear
+from custom_layers_r7 import FMoE
+from custom_layers_r7 import FMoELinear
 from custom_layers_opt import FMoEOpt
 
 
@@ -21,6 +21,7 @@ class _Expert(nn.Module):
         self.activation = activation
 
     def forward(self, inp, fwd_expert_count):
+        # import ipdb ipdb.set_trace()
         r"""
         First expand input to 4h (the hidden size is variable, but is called h4
         for convenience). Then perform activation. Finally shirink back to h.
@@ -54,7 +55,7 @@ class FMoETransformerMLP(FMoE):
             num_expert=num_expert, d_model=d_model, moe_top_k=moe_top_k, **kwargs
         )
         self.experts = _Expert(
-            num_expert, d_model // 2, d_hidden, activation, rank=expert_rank
+            num_expert, d_model, d_hidden, activation, rank=expert_rank
         )
         self.mark_parallel_comm(expert_dp_comm)
 

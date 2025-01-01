@@ -35,3 +35,25 @@ Sequential(
   (1): Dropout(p=0.7, inplace=False)
 )
 
+_fmoe_general_global_forward
+inp torch.Size([4096, 64])
+gate torch.Size([4096, 2])
+expert_fn
+<bound method FMoE.expert_fn of CustomizedMoEPositionwiseFF(
+  (gate): CustomNaiveGate_Balance_SMoE(
+    (gate): Linear(in_features=64, out_features=16, bias=True)
+  )
+  (experts): _Expert(
+    (htoh4): FMoELinear(num_expert=16, in_features=64,         out_features=128, bias=True, rank=0)
+    (h4toh): FMoELinear(num_expert=16, in_features=128,         out_features=64, bias=True, rank=0)
+    (activation): Sequential(
+      (0): ReLU()
+      (1): Dropout(p=0.7, inplace=False)
+    )
+  )
+  (layer_norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+  (dropout): Dropout(p=0.7, inplace=False)
+)>
+world_size = 1
+
+pos torch.Size([8192])

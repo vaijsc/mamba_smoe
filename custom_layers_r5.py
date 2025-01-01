@@ -11,6 +11,7 @@ from gates import NaiveGate
 import torch.nn.functional as F
 from fastermoe.config import switch_from_env
 
+
 def mark_module_parallel_comm(module, comm):
     # # import ipdb ipdb.set_trace()
     r"""
@@ -35,6 +36,7 @@ def _fmoe_general_global_forward(
     Intermediate results like expert counts are hidden from users by this
     function.
     """
+    # # import ipdb ipdb.set_trace()
     (
         pos,
         local_expert_count,
@@ -57,17 +59,33 @@ def _fmoe_general_global_forward(
             world_size,
         )
 
-    # import ipdb; ipdb.set_trace()
     x = tree.map_structure(scatter_func, inp)
     # import ipdb ipdb.set_trace()
     # x.shape torch.Size([16384, 128])
     # fwd_expert_count torch.Size([16]) 
     # tensor([1101, 1544, 1141,  725,  483, 1337,  787,  868, 1427, 1304, 1118,  904,
     #    970,  896,  837,  942])
+    """
+        expert_fn
+        <bound method FMoE.expert_fn of CustomizedMoEPositionwiseFF(
+        (gate): CustomNaiveGate_Balance_SMoE(
+            (gate): Linear(in_features=128, out_features=16, bias=True)
+        )
+        (experts): _Expert(
+            (htoh4): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
+            (h4toh): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
+            (activation): Sequential(
+            (0): ReLU()
+            (1): Dropout(p=0.7, inplace=False)
+            )
+        )
+        (layer_norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        (dropout): Dropout(p=0.7, inplace=False)
+        )>
+    """
     x = expert_fn(x, fwd_expert_count)
     # torch.Size([16384, 128])
     out_batch_size = tree.flatten(inp)[0].shape[0]
-    # 
     if len(gate.shape) == 2:
         out_batch_size *= gate.shape[1]
 
@@ -93,6 +111,7 @@ def _fmoe_general_global_forward(
     torch.Size([4096, 128])
     """
     return outp
+
 
 fmoe_faster_schedule = False
 if switch_from_env("FMOE_FASTER_SCHEDULE_ENABLE", False):
@@ -129,7 +148,6 @@ class FMoE(nn.Module):
         moe_group=None,
         moe_top_k=2,
         gate=NaiveGate,
-        # gate1 = ExpertGate,
         expert=None,
         gate_hook=None,
         mask=None,
@@ -139,7 +157,7 @@ class FMoE(nn.Module):
         self.num_expert = num_expert
         self.d_model = d_model
         self.world_size = world_size
-        self.flag = expert 
+
         self.slice_group = slice_group
         if mp_group is not None:
             print("[Warning] mp_group is being deprecated")
@@ -162,16 +180,17 @@ class FMoE(nn.Module):
         else:
             self.experts_fused = True
 
-        self.gate = gate(d_model // 2, num_expert, world_size, moe_top_k)
-        
+        self.gate = gate(d_model, num_expert, world_size, moe_top_k)
         self.gate_hook = gate_hook
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-
+        
+        self.weights_in = nn.Linear(self.d_model, self.d_model //2)
+        self.weights_out = nn.Linear(self.d_model //2, self.d_model)
+        
     def expert_fn(self, inp, fwd_expert_count):
         # import ipdb; ipdb.set_trace()
-        # print(self.flag)
         r"""
         The default expert function which either calls the experts as a whole
         or as separate experts.
@@ -190,7 +209,7 @@ class FMoE(nn.Module):
         return torch.cat(outputs, dim=0)
 
     def mark_parallel_comm(self, expert_dp_comm="none"):
-        # import ipdb ipdb.set_trace()
+        # # import ipdb ipdb.set_trace()
         r"""
         Automatically mark the data parallel comms of the parameters within the
         module. This can be typically called at the end of the __init__ function
@@ -217,6 +236,9 @@ class FMoE(nn.Module):
         torch.Size([2048, 128])
         
         """
+        # import ipdb; ipdb.set_trace()
+        moe_inp = self.weights_in(moe_inp)
+        moe_inp = self.weights_out(moe_inp)
         moe_inp_batch_size = tree.flatten(
             tree.map_structure(lambda tensor: tensor.shape[0], moe_inp)
         ) 
@@ -241,21 +263,11 @@ class FMoE(nn.Module):
             moe_inp = tree.map_structure(slice_func, moe_inp)
         
         # import ipdb; ipdb.set_trace()
-        split_dim = moe_inp.shape[1] // 2
-        moe_inp_1, moe_inp_2 = moe_inp[:, :split_dim], moe_inp[:, split_dim:]
-        """
-        self.gate
-        CustomNaiveGate_Balance_SMoE(
-        (gate): Linear(in_features=128, out_features=16, bias=True)
-        )
-        """
         """
         ipdb> moe_inp.shape
         torch.Size([2048, 128])
         """
-        gate_top_k_idx_1, gate_score_1 = self.gate(moe_inp_1, flag=False)
-        # gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp_2)
-
+        gate_top_k_idx, gate_score = self.gate(moe_inp)
         """
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
@@ -266,7 +278,7 @@ class FMoE(nn.Module):
             self.top_k = self.gate.dynamic_top_k
 
         if self.gate_hook is not None:
-            self.gate_hook(gate_top_k_idx, gate_score_1, None)
+            self.gate_hook(gate_top_k_idx, gate_score, None)
 
         # delete masked tensors
         if self.mask is not None and self.mask_dict is not None:
@@ -277,26 +289,17 @@ class FMoE(nn.Module):
                 return tensor
 
             mask = self.mask.view(-1)
-            moe_inp = tree.map_structure(delete_mask_func, moe_inp_1)
+            moe_inp = tree.map_structure(delete_mask_func, moe_inp)
             gate_top_k_idx = gate_top_k_idx[mask == 0, :]
 
-        fwd_1 = _fmoe_general_global_forward(
-            moe_inp_1,
-            gate_top_k_idx_1,
+        fwd = _fmoe_general_global_forward(
+            moe_inp,
+            gate_top_k_idx,
             self.expert_fn,
             self.num_expert,
             self.world_size,
             experts=self.experts,
         )
-        inp2_flat = tree.flatten(moe_inp_2)[0]
-        capacity_factor=2
-        # Select top-k tokens for each expert
-        gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp_2, flag=True)
-        num_tokens, n_embd = inp2_flat.shape
-        
-        import ipdb; ipdb.set_trace()
-        # Adjust top-k per expert based on capacity factor
-        top_k = min(int(capacity_factor * num_tokens / self.num_expert), num_tokens)
         
         # recover deleted tensors
         if self.mask is not None and self.mask_dict is not None:
@@ -322,7 +325,7 @@ class FMoE(nn.Module):
             ipdb> moe_outp.shape
             torch.Size([2048, 2, 128])
             """
-            moe_outp = tree.map_structure(recover_func, fwd_1)
+            moe_outp = tree.map_structure(recover_func, fwd)
         else:
             
             def view_func(tensor):
@@ -330,18 +333,17 @@ class FMoE(nn.Module):
                 tensor = tensor.view(-1, self.top_k, dim)
                 return tensor
 
-            moe_outp_1 = tree.map_structure(view_func, fwd_1)
+            moe_outp = tree.map_structure(view_func, fwd)
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
             """
-        gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
-        gate_score_2 = gate_score_2.view(-1, 1, top_k)
+        gate_score = gate_score.view(-1, 1, self.top_k)
         """
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
         """
-        def bmm_func(gate_score, tensor):
+        def bmm_func(tensor):
             # import ipdb; ipdb.set_trace()
             dim = tensor.shape[-1]
             tensor = torch.bmm(gate_score, tensor).reshape(-1, dim)
@@ -351,35 +353,7 @@ class FMoE(nn.Module):
         ipdb> moe_outp.shape
         torch.Size([2048, 2, 128])
         """
-        moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
-                
-        # Prepare results tensor
-        moe_outp_2 = torch.zeros_like(inp2_flat)
-
-        for expert_idx in range(self.num_expert):
-            # Tokens selected for the current expert
-            token_indices = gate_score_2[expert_idx]
-            token_weights = gate_top_k_idx_2[expert_idx]
-            token_indices = token_indices.long()
-
-            # Gather the input for the current expert
-            expert_input = inp2_flat[token_indices] * token_weights[:, None]
-            fwd_2 = _fmoe_general_global_forward(
-            expert_input,
-            gate_top_k_idx_2,
-            self.expert_fn,
-            self.num_expert,
-            self.world_size,
-            experts=self.experts,
-            )
-            # Distribute the expert outputs back to the results tensor
-            moe_outp_2[token_indices] += fwd_2 * token_weights[:, None]
-
-        # Reshape results back to input shape
-        moe_outp_2 = moe_outp_2.view_as(moe_inp_2)
-    
-        moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
-        
+        moe_outp = tree.map_structure(bmm_func, moe_outp)
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
