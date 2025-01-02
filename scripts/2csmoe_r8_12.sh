@@ -39,7 +39,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_r8_12.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_r812.pt \
 "
  
 echo "Training D -> 2D, N x 2D and K x 2D"
