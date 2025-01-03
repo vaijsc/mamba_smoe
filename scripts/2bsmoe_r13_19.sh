@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=r13_18
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_r13_18_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_r13_18.txt
+#SBATCH --job-name=r13_19
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_r13_19_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_r13_19.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --mem-per-gpu=50G
@@ -39,7 +39,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_r13_18.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_r13_19.pt \
 "
  
 echo "Training Hierarchical MoE idea, split two subset of experts and each choose top-2, clean data"
