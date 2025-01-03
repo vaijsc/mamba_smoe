@@ -44,56 +44,56 @@ args="
  
 echo "Training Hierarchical MoE idea, split two subset of experts and each choose top-2, clean data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r18.py $args
+python -m torch.distributed.launch --master_port 10116 --nproc_per_node=2 --use_env train_r18.py $args
 
 echo "Evaluation Hierarchical MoE idea, split two subset of experts and each choose top-2, clean data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r18.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10116 --nproc_per_node=2 --use_env train_r18.py $args --resume --full-eval-mode
  
 echo "Training D -> 2D, N x 2D and K x 2D, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=2 --use_env train_r13.py $args
+python -m torch.distributed.launch --master_port 10111 --nproc_per_node=2 --use_env train_r13.py $args
 
 echo "Evaluation D -> 2D, N x 2D and K x 2D, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=2 --use_env train_r13.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10111 --nproc_per_node=2 --use_env train_r13.py $args --resume --full-eval-mode
 
 echo "Training D -> 2D, N x 2D and K x 2D, with RELU activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10012 --nproc_per_node=2 --use_env train_r14.py $args
+python -m torch.distributed.launch --master_port 10112 --nproc_per_node=2 --use_env train_r14.py $args
 
 echo "Evaluation D -> 2D, N x 2D and K x 2D, with RELU activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10012 --nproc_per_node=2 --use_env train_r14.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10112 --nproc_per_node=2 --use_env train_r14.py $args --resume --full-eval-mode
 
 echo "Training D -> 2D, N x 2D and K x 2D, with Sigmoid activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10013 --nproc_per_node=2 --use_env train_r15.py $args
+python -m torch.distributed.launch --master_port 10113 --nproc_per_node=2 --use_env train_r15.py $args
 
 echo "Evaluation D -> 2D, N x 2D and K x 2D, with Sigmoid activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10013 --nproc_per_node=2 --use_env train_r15.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10113 --nproc_per_node=2 --use_env train_r15.py $args --resume --full-eval-mode
 
 echo "Training D -> 2D, N x 2D and K x 2D, with Tanh activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10014 --nproc_per_node=2 --use_env train_r16.py $args
+python -m torch.distributed.launch --master_port 10114 --nproc_per_node=2 --use_env train_r16.py $args
 
 echo "Evaluation D -> 2D, N x 2D and K x 2D, with Tanh activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10014 --nproc_per_node=2 --use_env train_r16.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10114 --nproc_per_node=2 --use_env train_r16.py $args --resume --full-eval-mode
 
 echo "Training D -> 2D, N x 2D and K x 2D, with Softplus activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10015 --nproc_per_node=2 --use_env train_r17.py $args
+python -m torch.distributed.launch --master_port 10115 --nproc_per_node=2 --use_env train_r17.py $args
 
 echo "Evaluation D -> 2D, N x 2D and K x 2D, with Softplus activation, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10015 --nproc_per_node=2 --use_env train_r17.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10115 --nproc_per_node=2 --use_env train_r17.py $args --resume --full-eval-mode
 
 echo "Training Hierarchical MoE idea, split two subset of experts and each choose top-2, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r19.py $args
+python -m torch.distributed.launch --master_port 10116 --nproc_per_node=2 --use_env train_r19.py $args
 
 echo "Evaluation Hierarchical MoE idea, split two subset of experts and each choose top-2, attack data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r19.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10116 --nproc_per_node=2 --use_env train_r19.py $args --resume --full-eval-mode
