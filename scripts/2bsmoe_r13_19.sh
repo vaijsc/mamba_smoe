@@ -35,7 +35,7 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 80 \
---batch-sz 32 \
+--batch-sz 16 \
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
@@ -44,7 +44,7 @@ args="
  
 echo "Training Hierarchical MoE idea, split two subset of experts and each choose top-2, clean data"
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10116 --nproc_per_node=2 --use_env train_r18.py $args
+python -m torch.distributed.launch --master_port 10116 --nproc_per_node=1 --use_env train_r18.py $args
 
 echo "Evaluation Hierarchical MoE idea, split two subset of experts and each choose top-2, clean data"
 # CUDA_VISIBLE_DEVICES='0,1' 
