@@ -158,3 +158,5 @@ similarity_matrix = torch.tril(similarity_matrix)
 
 # Use the similarity matrix to update moe_outp (out-of-place operation)
 moe_outp = torch.matmul(similarity_matrix, moe_inp)
+
+dep trai 10d
