@@ -72,8 +72,8 @@ def _fmoe_general_global_forward(
             (gate): Linear(in_features=128, out_features=16, bias=True)
         )
         (experts): _Expert(
-            (htoh4): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
-            (h4toh): FMoELinear(num_expert=16, in_features=128,         out_features=128, bias=True, rank=0)
+            (htoh4): FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
+            (h4toh): FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
             (activation): Sequential(
             (0): ReLU()
             (1): Dropout(p=0.7, inplace=False)
@@ -188,19 +188,39 @@ class FMoE(nn.Module):
         self.weights = nn.Linear(2 * self.d_model, self.d_model)
 
     def expert_fn(self, inp, fwd_expert_count):
-        # import ipdb; ipdb.set_trace()
         r"""
         The default expert function which either calls the experts as a whole
         or as separate experts.
         """
+        # import ipdb; ipdb.set_trace()
         if self.experts_fused:
-            return self.experts(inp, fwd_expert_count)
+            # Get the expert range
+            start_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[0]
+            end_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[1]
+            
+            # Adjust fwd_expert_count based on the current range
+            adjusted_count = torch.zeros_like(fwd_expert_count)
+            # adjusted_count[:(end_idx - start_idx)] = fwd_expert_count[start_idx:end_idx]
+            
+            adjusted_count[start_idx: end_idx] = fwd_expert_count[start_idx: end_idx]
+            # Create expert mask
+            expert_mask = torch.zeros_like(fwd_expert_count)
+            expert_mask[start_idx: end_idx] = 1.0
+            
+            # Set the expert mask
+            self.experts.set_expert_mask(expert_mask)
+            
+            return self.experts(inp, adjusted_count)
+                
         if isinstance(fwd_expert_count, torch.Tensor):
             fwd_expert_count = fwd_expert_count.cpu().numpy()
         outputs = []
         base_idx = 0
-        for i in range(self.num_expert):
-            batch_size = fwd_expert_count[i]
+        # Get the expert range from kwargs
+        start_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[0]
+        end_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[1]
+        for i in range(start_idx, end_idx):
+            batch_size = fwd_expert_count[i - start_idx]
             inp_slice = inp[base_idx : base_idx + batch_size]
             outputs.append(self.experts[i](inp_slice))
             base_idx += batch_size
@@ -262,6 +282,7 @@ class FMoE(nn.Module):
         ipdb> moe_inp.shape
         torch.Size([2048, 128])
         """
+        # import ipdb; ipdb.set_trace()
         gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
         """
         ipdb> gate_top_k_idx.shape
@@ -269,6 +290,7 @@ class FMoE(nn.Module):
         ipdb> gate_score.shape
         torch.Size([2048, 2])
         """
+        gate_top_k_idx_2 = gate_top_k_idx_2 + 8
         if hasattr(self.gate, "dynamic_top_k"):
             self.top_k = self.gate.dynamic_top_k
 
@@ -288,22 +310,22 @@ class FMoE(nn.Module):
             moe_inp = tree.map_structure(delete_mask_func, moe_inp)
             gate_top_k_idx_1 = gate_top_k_idx_1[mask == 0, :]
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
-        # import ipdb; ipdb.set_trace()
-
+            
+        self.current_expert_range = (0, 8)
         fwd_1 = _fmoe_general_global_forward(
             moe_inp,
             gate_top_k_idx_1,
             self.expert_fn,
-            self.num_expert // 2,
+            self.num_expert,
             self.world_size,
             experts=self.experts,
         )
-        
+        self.current_expert_range = (8, 16)
         fwd_2 = _fmoe_general_global_forward(
             moe_inp,
             gate_top_k_idx_2,
             self.expert_fn,
-            self.num_expert // 2,
+            self.num_expert,
             self.world_size,
             experts=self.experts,
         )
@@ -484,3 +506,37 @@ class FMoELinear(nn.Module):
         # # import ipdb ipdb.set_trace()
         # smoe: FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
         torch.nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+
+
+class _Expert(nn.Module):
+    r"""
+    An expert using 2 FMoELinear modules to speed up the computation of experts
+    within one worker.
+    """
+
+    def __init__(self, num_expert, d_model, d_hidden, activation, rank=0):
+        super().__init__()
+        self.htoh4 = FMoELinear(num_expert, d_model, d_hidden, bias=True, rank=rank)
+        self.h4toh = FMoELinear(num_expert, d_hidden, d_model, bias=True, rank=rank)
+        self.activation = activation
+        self.expert_mask = None
+
+    def set_expert_mask(self, mask):
+        """Set mask for active/inactive experts"""
+        self.expert_mask = mask
+
+    def forward(self, inp, fwd_expert_count):
+        r"""
+        First expand input to 4h (the hidden size is variable, but is called h4
+        for convenience). Then perform activation. Finally shrink back to h.
+        """
+        if self.expert_mask is not None:
+            # Apply expert mask to the expert counts
+            masked_count = fwd_expert_count * self.expert_mask
+        else:
+            masked_count = fwd_expert_count
+
+        x = self.htoh4(inp, masked_count)
+        x = self.activation(x)
+        x = self.h4toh(x, masked_count)
+        return x

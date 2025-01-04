@@ -10,7 +10,7 @@ import time
 
 from config import PARAMS_CONFIG
 from data_1 import get_train_val_test_data
-from models_r19 import TransformerSeq
+from models_r18 import TransformerSeq
 from trainer import train_iteration, full_eval
 import datetime
 import wandb

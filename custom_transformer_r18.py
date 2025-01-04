@@ -19,19 +19,28 @@ class _Expert(nn.Module):
         self.htoh4 = FMoELinear(num_expert, d_model, d_hidden, bias=True, rank=rank)
         self.h4toh = FMoELinear(num_expert, d_hidden, d_model, bias=True, rank=rank)
         self.activation = activation
+        self.expert_mask = None
+
+    def set_expert_mask(self, mask):
+        """Set mask for active/inactive experts"""
+        self.expert_mask = mask
 
     def forward(self, inp, fwd_expert_count):
-        # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         r"""
         First expand input to 4h (the hidden size is variable, but is called h4
-        for convenience). Then perform activation. Finally shirink back to h.
+        for convenience). Then perform activation. Finally shrink back to h.
         """
-        # inp torch.Size([16384, 128]), fwd_expert_count shape 16
-        x = self.htoh4(inp, fwd_expert_count)
-        x = self.activation(x)
-        x = self.h4toh(x, fwd_expert_count) # torch.Size([16384, 128])
-        return x
+        if self.expert_mask is not None:
+            # Apply expert mask to the expert counts
+            masked_count = fwd_expert_count * self.expert_mask
+        else:
+            masked_count = fwd_expert_count
 
+        x = self.htoh4(inp, masked_count)
+        x = self.activation(x)
+        x = self.h4toh(x, masked_count)
+        return x
 
 class FMoETransformerMLP(FMoE):
     r"""
@@ -55,7 +64,7 @@ class FMoETransformerMLP(FMoE):
             num_expert=num_expert, d_model=d_model, moe_top_k=moe_top_k, **kwargs
         )
         self.experts = _Expert(
-            num_expert // 2, d_model, d_hidden, activation, rank=expert_rank
+            num_expert, d_model, d_hidden, activation, rank=expert_rank
         )
         self.mark_parallel_comm(expert_dp_comm)
 
