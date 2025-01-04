@@ -140,3 +140,21 @@ ipdb> moe_inp_batch_size
 [2048]
 ipdb> self.slice_size
 1
+
+# Compute the L2 norm in smaller steps to reduce memory usage
+norms = torch.norm(moe_inp, p=2, dim=-1, keepdim=True)
+
+# Normalize the tokens
+moe_inp = moe_inp / norms  # Element-wise division
+
+# Scale moe_inp (keeping this operation out-of-place)
+moe_inp = moe_inp * (1/3)  # Element-wise multiplication
+
+# Compute the similarity matrix
+similarity_matrix = torch.matmul(moe_inp, moe_outp.transpose(1, 2))
+
+# Use the lower triangular part of the similarity matrix
+similarity_matrix = torch.tril(similarity_matrix)
+
+# Use the similarity matrix to update moe_outp (out-of-place operation)
+moe_outp = torch.matmul(similarity_matrix, moe_inp)

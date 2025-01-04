@@ -21,6 +21,7 @@ class NaiveGate(BaseGate):
         self.top_k = top_k
 
     def forward(self, inp, return_all_scores=False):
+        # import ipdb; ipdb.set_trace()
         r"""
         The naive implementation simply calculates the top-k of a linear layer's
         output.

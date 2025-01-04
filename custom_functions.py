@@ -23,7 +23,7 @@ def get_moe_group():
     return _moe_group
 
 def count_by_gate(gate, num_expert, world_size, require_pos=True):
-    # import ipdb ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     with torch.no_grad():
         local_expert_count = torch.zeros(
             num_expert * world_size, device=gate.device, dtype=torch.int32
@@ -59,7 +59,7 @@ def prepare_forward(gate, num_expert, world_size):
         world_size: number of workers that hold different experts.
         comm: the communicator of all workers in the expert-parallel group.
     """
-    # # import ipdb ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     pos, local_expert_count, global_expert_count = count_by_gate(
         gate, num_expert, world_size
     )

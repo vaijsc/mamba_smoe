@@ -4,15 +4,15 @@
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_STT2.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
-#SBATCH --nodelist=sdc2-hpc-dgx-a100-016
+#SBATCH --nodelist=sdc2-hpc-dgx-a100-014
 #SBATCH --mem-per-gpu=50G
 #SBATCH --cpus-per-gpu=40
-#SBATCH --partition=research
+#SBATCH --partition=applied
 #SBATCH --mail-type=all
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
 eval "$(conda shell.bash hook)"
-conda activate moe
+conda activate /home/anhnd81/.conda/envs/moe
 cd /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE
 echo "Current path is $PATH"
 echo "Running"
@@ -40,7 +40,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT2.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_STT2.pt \
 "
  
 # bs 48 -> 16 -> 32
