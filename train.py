@@ -86,9 +86,9 @@ def launch(
     state_dict = OrderedDict(state_dict)
     model.load_state_dict(state_dict)    
     
-    for name, module in model.named_modules():
-        if 'experts' in name:
-            module.requires_grad_(False)
+    # for name, module in model.named_modules():
+    #     if 'experts' in name:
+    #         module.requires_grad_(False)
     
     if distributed:
         local_rank = env_params["local_rank"]
