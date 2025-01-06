@@ -78,11 +78,11 @@ def launch(
     checkpoint = torch.load(PATH)
     from collections import OrderedDict
     state_dict = dict(checkpoint['model'])
-    # keys = list(state_dict.keys())
-    # for key in keys:
-    #     if key.startswith('module.'):
-    #         state_dict[key.replace('module.', '')] = state_dict[key]
-    #         del state_dict[key]
+    keys = list(state_dict.keys())
+    for key in keys:
+        if key.startswith('module.'):
+            state_dict[key.replace('module.', '')] = state_dict[key]
+            del state_dict[key]
     state_dict = OrderedDict(state_dict)
     model.load_state_dict(state_dict)    
     
