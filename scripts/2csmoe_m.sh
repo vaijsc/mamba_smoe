@@ -75,7 +75,7 @@ args2="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/32ft_2.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/32ft_2.pt \
 "
  
 # 0.0007
