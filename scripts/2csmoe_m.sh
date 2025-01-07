@@ -48,11 +48,11 @@ args1="
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_ft.py $args1
+# python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_ft.py $args1
 
 echo "Evaluation ..."
 # # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_ft.py $args1 --resume --full-eval-mode
+# python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_ft.py $args1 --resume --full-eval-mode
 
 args2="
 --data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/  \
