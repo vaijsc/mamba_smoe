@@ -17,6 +17,8 @@ echo "Current path is $PATH"
 echo "Running"
 # nvidia-smi
 echo $CUDA_VISIBLE_DEVICES
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
+
 
 args1="
 --data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/  \
