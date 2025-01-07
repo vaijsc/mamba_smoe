@@ -114,13 +114,13 @@ args3="
  
 # 0.0007
 # bs 48 -> 16 -> 32
-echo "Training ..."
-# CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_1ft.py $args3
+# echo "Training ..."
+# # CUDA_VISIBLE_DEVICES='0,1' 
+# python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_1ft.py $args3
 
-echo "Evaluation ..."
-# CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_1ft.py $args3 --resume --full-eval-mode
+# echo "Evaluation ..."
+# # CUDA_VISIBLE_DEVICES='0,1' 
+# python -m torch.distributed.launch --master_port 10007 --nproc_per_node=2 --use_env train_1ft.py $args3 --resume --full-eval-mode
 
 args4="
 --data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/  \
