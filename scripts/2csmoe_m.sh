@@ -76,7 +76,7 @@ args2="
 --checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32ft1.pt \
 "
  
-0.0007
+# 0.0007
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
