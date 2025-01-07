@@ -87,6 +87,14 @@ def launch(
     model.load_state_dict(state_dict)    
     
     for name, module in model.named_modules():
+        if 'smoe' not in name:
+            module.requires_grad_(False)
+
+    for name, module in model.named_modules():
+        if 'smoe' in name:
+            module.requires_grad_(True)
+            
+    for name, module in model.named_modules():
         if 'experts' in name:
             module.requires_grad_(False)
     

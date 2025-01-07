@@ -113,16 +113,18 @@ def launch(
     logging(
         f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
-    # resume training from last checkpoint if exists
-    iter_init = load_checkpoint(
-        trainer_params["checkpoint_path"],
-        model,
-        optimizer,
-        scheduler,
-        logger,
-        distributed,
-        resume,
-    )
+
+    # # resume training from last checkpoint if exists
+    # iter_init = load_checkpoint(
+    #     trainer_params["checkpoint_path"],
+    #     model,
+    #     optimizer,
+    #     scheduler,
+    #     logger,
+    #     distributed,
+    #     resume,
+    # )
+    
     # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)

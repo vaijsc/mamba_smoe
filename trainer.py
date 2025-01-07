@@ -155,6 +155,7 @@ def train_iteration(
 
 # do full evaluation
 def full_eval(model, optimizer, scheduler, data, block_size, hidden_size):
+    # import ipdb; ipdb.set_trace()
     model.eval()
     train_pos = 0
     nb_batches_per_iter_max = math.ceil(data.size(1) / block_size)

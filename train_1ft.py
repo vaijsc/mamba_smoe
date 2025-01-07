@@ -85,7 +85,15 @@ def launch(
             del state_dict[key]
     state_dict = OrderedDict(state_dict)
     model.load_state_dict(state_dict)    
-    
+
+    for name, module in model.named_modules():
+        if 'smoe' not in name:
+            module.requires_grad_(False)
+
+    for name, module in model.named_modules():
+        if 'smoe' in name:
+            module.requires_grad_(True)
+            
     # for name, module in model.named_modules():
     #     if 'experts' in name:
     #         module.requires_grad_(False)
