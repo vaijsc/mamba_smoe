@@ -29,17 +29,17 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt
+--checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_10.pt
 "
 
 #--checkpoint /path/to/checkpoint/directory/smoe.pt \
 #block_sz: shape of input
 echo "Training ..."
-#CUDA_VISIBLE_DEVICES='0,1,2,3'
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train.py $args #\
+# CUDA_VISIBLE_DEVICES='0,1,2,3'
+python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_ft.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
-# echo "Evaluation ..."
+echo "Evaluation ..."
 # python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode #\ 
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 

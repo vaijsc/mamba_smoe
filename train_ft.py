@@ -71,8 +71,8 @@ def launch(
         **model_params,
         adapt_span_params=adapt_span_params,
     )
-    # import ipdb; ipdb.set_trace()
     print(model)
+    # PATH=''
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
     checkpoint = torch.load(PATH)
@@ -85,10 +85,16 @@ def launch(
             del state_dict[key]
     state_dict = OrderedDict(state_dict)
     model.load_state_dict(state_dict)    
+    # import ipdb; ipdb.set_trace()
+    for name, module in model.named_modules():
+        if 'smoe' not in name:
+            module.requires_grad_(False)
+
+    for name, module in model.named_modules():
+        if 'smoe' in name:
+            module.requires_grad_(True)
     
-    # for name, module in model.named_modules():
-    #     if 'experts' in name:
-    #         module.requires_grad_(False)
+    # import ipdb; ipdb.set_trace()
     
     if distributed:
         local_rank = env_params["local_rank"]

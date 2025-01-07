@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=ftbs32
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_blbs32_ft_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_blbs32_ft.txt
+#SBATCH --job-name=32ft
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/32ft_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/32ft.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --mem-per-gpu=50G
@@ -39,7 +39,7 @@ args1="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32ft.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/32ft_1.pt \
 "
  
 # 0.0007
@@ -73,10 +73,10 @@ args2="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32ft1.pt \
+--checkpoint /home/anhnd81/anhnd81/workspace/MomentumSMoE/result/checkpoints/32ft_2.pt \
 "
  
-0.0007
+# 0.0007
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
@@ -107,7 +107,7 @@ args3="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32_1ft.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/32ft_3.pt \
 "
  
 # 0.0007
@@ -141,7 +141,7 @@ args4="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32_1ft1.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/32ft_4.pt \
 "
  
 # 0.0007
