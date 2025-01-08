@@ -71,6 +71,19 @@ def launch(
         **model_params,
         adapt_span_params=adapt_span_params,
     )
+    
+    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt'
+    checkpoint = torch.load(PATH)
+    from collections import OrderedDict
+    state_dict = dict(checkpoint['model'])
+    keys = list(state_dict.keys())
+    for key in keys:
+        if key.startswith('module.'):
+            state_dict[key.replace('module.', "")] = state_dict[key]
+            del state_dict[key] 
+    state_dict = OrderedDict(state_dict)
+    model.load_state_dict(state_dict)
+    
     print(model)
     if distributed:
         local_rank = env_params["local_rank"]
@@ -93,9 +106,9 @@ def launch(
 
     # create logger
     logger = Logger()
-    folder_path = '/lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/logging.txt'
+    # folder_path = '/lustre/scratch/client/vinai/users/phinh2/workspace/MomentumSMoE/result/logging.txt'
     # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
+    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     logging = create_exp_dir(f"{folder_path}")
     ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
@@ -115,15 +128,15 @@ def launch(
     )
 
     # # resume training from last checkpoint if exists
-    # iter_init = load_checkpoint(
-    #     trainer_params["checkpoint_path"],
-    #     model,
-    #     optimizer,
-    #     scheduler,
-    #     logger,
-    #     distributed,
-    #     resume,
-    # )
+    iter_init = load_checkpoint(
+        trainer_params["checkpoint_path"],
+        model,
+        optimizer,
+        scheduler,
+        logger,
+        distributed,
+        resume,
+    )
     
     # fix gate
     if model_params["smoe_dropout"]:
