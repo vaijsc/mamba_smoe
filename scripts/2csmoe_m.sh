@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=bs48_4
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs48_4_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs48_4.txt
+#SBATCH --job-name=bs192_24
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs192_24_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs192_24.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --mem-per-gpu=50G
@@ -39,7 +39,7 @@ args="
 --batch-split 24 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/bs48_4.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/bs192_24.pt \
 "
  
 # 0.0007
