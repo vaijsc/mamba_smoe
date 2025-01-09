@@ -1,10 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=1_bs32
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_blbs32_1_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/2csmoe_blbs32_1.txt
+#SBATCH --job-name=bs48_4
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs48_4_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs48_4.txt
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=2
-#SBATCH --nodelist=sdc2-hpc-dgx-a100-016
+#SBATCH --gpus-per-node=1
 #SBATCH --mem-per-gpu=50G
 #SBATCH --cpus-per-gpu=24
 #SBATCH --partition=research
@@ -37,7 +36,7 @@ args="
 --lr-warmup 4000 \
 --niter 80 \
 --batch-sz 192 \
---batch-split 12 \
+--batch-split 16 \
 --nbatches 1000 \
 --distributed \
 --checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/bs48_4.pt \
