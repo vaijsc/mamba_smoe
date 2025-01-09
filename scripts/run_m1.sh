@@ -22,10 +22,10 @@ args="
 --checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft3.pt \
 "
  
-echo "Training ..."
-CUDA_VISIBLE_DEVICES='4,5,6,7' python -m torch.distributed.launch --master_port 10008 --nproc_per_node=4 --use_env train_ft3.py $args \
-> >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft3.txt) 2>&1
+# echo "Training ..."
+# CUDA_VISIBLE_DEVICES='4,5,6,7' python -m torch.distributed.launch --master_port 10008 --nproc_per_node=4 --use_env train_ft3.py $args \
+# > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft3.txt) 2>&1
 
-# echo "Evaluation ..."
-# CUDA_VISIBLE_DEVICES='4,5,6,7' python -m torch.distributed.launch --master_port 10008 --nproc_per_node=4 --use_env train_ft3.py $args --resume --full-eval-mode # \
+echo "Evaluation ..."
+CUDA_VISIBLE_DEVICES='4,5,6,7' python -m torch.distributed.launch --master_port 10008 --nproc_per_node=4 --use_env train_ft3.py $args --resume --full-eval-mode # \
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft1.txt) 2>&1

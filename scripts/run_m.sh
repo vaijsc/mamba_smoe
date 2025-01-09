@@ -15,24 +15,26 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 20 \
---batch-sz 48 \
+--batch-sz 32 \
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft3.pt \
+--checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/hier_tok.pt \
 "
  
-# echo "Training ..."
-# CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=4 --use_env train_ft.py $args \
+echo "Training ..."
+CUDA_VISIBLE_DEVICES='2,3,4,5' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=4 --use_env train_ft4.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft.txt) 2>&1
 
-echo "Evaluation ..."
-CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=1 --use_env train_ft.py $args  --full-eval-mode \
+# echo "Evaluation ..."
+# CUDA_VISIBLE_DEVICES='4,5,6,7' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=4 --use_env train.py $args  --full-eval-mode \
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft.txt) 2>&1
 
 # 23895264
 # 25384224
 # 23895276
+# 23895372
+
 # echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=0 --use_env train_ft1.py $args \
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft3.txt) 2>&1

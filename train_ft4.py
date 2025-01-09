@@ -7,10 +7,10 @@ import argparse
 import math, random
 import torch
 import time
-
+import torch.nn as nn
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_mh import TransformerSeq
+from models_ft4 import TransformerSeq
 from trainer import train_iteration, full_eval
 import datetime
 import wandb
@@ -27,6 +27,14 @@ from utils import (
     set_freq_optimal_search,
 )
 
+def initialize_missing_weights(model):
+    for idx, layer in enumerate(model.layers):
+        if hasattr(layer.smoe, 'weights'):
+            if not layer.smoe.weights.weight.requires_grad:
+                nn.init.xavier_uniform_(layer.smoe.weights.weight)
+            if layer.smoe.weights.bias is not None and not layer.smoe.weights.bias.requires_grad:
+                nn.init.constant_(layer.smoe.weights.bias, 0)
+            print(f"Initialized weights for layer {idx}: smoe.weights")
 
 def launch(
     env_params,
@@ -71,7 +79,38 @@ def launch(
         **model_params,
         adapt_span_params=adapt_span_params,
     )
+    # import ipdb; ipdb.set_trace()
     print(model)
+    # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
+    # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
+    # PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft3.pt'
+    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt'
+    checkpoint = torch.load(PATH)
+    # import ipdb; ipdb.set_trace()
+    from collections import OrderedDict
+    state_dict = dict(checkpoint['model'])
+    keys = list(state_dict.keys())
+    for key in keys:
+        if key.startswith('module.'):
+            state_dict[key.replace('module.', '')] = state_dict[key]
+            del state_dict[key]
+    state_dict = OrderedDict(state_dict)
+    # model.load_state_dict(state_dict)
+    # import ipdb; ipdb.set_trace()
+    model.load_state_dict(state_dict, strict=False)
+
+    for name, module in model.named_modules():
+        if 'smoe' not in name:
+            module.requires_grad_(False)
+
+    for name, module in model.named_modules():
+        if 'smoe' in name:
+            module.requires_grad_(True)
+
+    # for name, module in model.named_modules():
+    #     if 'experts' in name:
+    #         module.requires_grad_(False)
+    
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)
@@ -93,7 +132,7 @@ def launch(
 
     # create logger
     logger = Logger()
-    # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    # folder_path = '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/logging.txt'
     folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
@@ -127,7 +166,7 @@ def launch(
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)
     # eval model
-    if trainer_params["full_eval_mode"]:
+    if trainer_params["full_eval_mode"]:  
         # evaluate the model on test data
         with torch.no_grad():
             loss_val = full_eval(

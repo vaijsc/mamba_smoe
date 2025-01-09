@@ -83,7 +83,7 @@ def launch(
     print(model)
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
-    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt'
+    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft3.pt'
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
     checkpoint = torch.load(PATH)
