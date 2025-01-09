@@ -10,7 +10,7 @@ import time
 import torch.nn as nn
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_r18 import TransformerSeq
+from models_ft3 import TransformerSeq
 from trainer import train_iteration, full_eval
 import datetime
 import wandb
@@ -83,10 +83,11 @@ def launch(
     print(model)
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
-    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft1.pt'
+    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt'
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
     checkpoint = torch.load(PATH)
+    # import ipdb; ipdb.set_trace()
     from collections import OrderedDict
     state_dict = dict(checkpoint['model'])
     keys = list(state_dict.keys())
@@ -95,12 +96,9 @@ def launch(
             state_dict[key.replace('module.', '')] = state_dict[key]
             del state_dict[key]
     state_dict = OrderedDict(state_dict)
+    # model.load_state_dict(state_dict)
     # import ipdb; ipdb.set_trace()
     model.load_state_dict(state_dict)
-    # import ipdb; ipdb.set_trace()
-    # model.load_state_dict(state_dict, strict=False)
-    # Initialize missing weights
-    # initialize_missing_weights(model)
 
     for name, module in model.named_modules():
         if 'smoe' not in name:
@@ -156,15 +154,15 @@ def launch(
         f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
     # resume training from last checkpoint if exists
-    # iter_init = load_checkpoint(
-    #     trainer_params["checkpoint_path"],
-    #     model,
-    #     optimizer,
-    #     scheduler,
-    #     logger,
-    #     distributed,
-    #     resume,
-    # )
+    iter_init = load_checkpoint(
+        trainer_params["checkpoint_path"],
+        model,
+        optimizer,
+        scheduler,
+        logger,
+        distributed,
+        resume,
+    )
     # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)

@@ -185,7 +185,7 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        self.weights = nn.Linear(2 * self.d_model, self.d_model)
+        # self.weights = nn.Linear(2 * self.d_model, self.d_model)
         # torch.nn.init.xavier_uniform_(self.weights.weight)
         # torch.nn.init.zeros_(self.weights.bias)
         # ft2
@@ -197,6 +197,7 @@ class FMoE(nn.Module):
         or as separate experts.
         """
         # import ipdb; ipdb.set_trace()
+        
         if self.experts_fused:
             # Get the expert range
             start_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[0]
@@ -393,8 +394,9 @@ class FMoE(nn.Module):
         moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
         # g1, g2 = torch.softmax(self.weights, dim=0)  # Normalize to sum to 1, optional
         # moe_outp = g1 * moe_outp_1 + g2 * moe_outp_2
-        moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
-        moe_outp = self.weights(moe_outp)
+        # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
+        # moe_outp = self.weights(moe_outp)
+        moe_outp = 1/2 * (moe_outp_1 + moe_outp_2)
 
         if self.slice_size > 1:
 

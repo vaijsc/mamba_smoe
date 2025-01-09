@@ -144,6 +144,7 @@ def launch(
     # eval model
     if trainer_params["full_eval_mode"]:
         # evaluate the model on test data
+        # print('check scheduler = False?', scheduler == None)
         with torch.no_grad():
             loss_val = full_eval(
                 model,

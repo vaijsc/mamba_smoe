@@ -79,14 +79,14 @@ def launch(
         **model_params,
         adapt_span_params=adapt_span_params,
     )
-    # import ipdb; ipdb.set_trace()
     print(model)
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
-    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft1.pt'
+    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft2.pt'
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
     checkpoint = torch.load(PATH)
+    # import ipdb; ipdb.set_trace()
     from collections import OrderedDict
     state_dict = dict(checkpoint['model'])
     keys = list(state_dict.keys())
@@ -96,11 +96,12 @@ def launch(
             del state_dict[key]
     state_dict = OrderedDict(state_dict)
     # import ipdb; ipdb.set_trace()
-    model.load_state_dict(state_dict)
     # import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
+
+    model.load_state_dict(state_dict)
+
     # model.load_state_dict(state_dict, strict=False)
-    # Initialize missing weights
-    # initialize_missing_weights(model)
 
     for name, module in model.named_modules():
         if 'smoe' not in name:
