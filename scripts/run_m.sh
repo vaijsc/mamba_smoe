@@ -19,21 +19,22 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/hier_tok.pt \
+--checkpoint /home/ubuntu/workspace/MomentumSMoE/result/checkpoints/hier_tok1.pt \
 "
  
 echo "Training ..."
-CUDA_VISIBLE_DEVICES='2,3,4,5' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=4 --use_env train_ft4.py $args #\
+CUDA_VISIBLE_DEVICES='2,3,4,5' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=4 --use_env train_ft5.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft.txt) 2>&1
 
 # echo "Evaluation ..."
-# CUDA_VISIBLE_DEVICES='4,5,6,7' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=4 --use_env train.py $args  --full-eval-mode \
+# CUDA_VISIBLE_DEVICES='2,3,4,5' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=4 --use_env train_ft5.py $args  --full-eval-mode \
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_ft.txt) 2>&1
 
 # 23895264
 # 25384224
 # 23895276
 # 23895372
+# 23895276
 
 # echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1,2,3' python -m torch.distributed.launch --master_port 10007 --nproc_per_node=0 --use_env train_ft1.py $args \

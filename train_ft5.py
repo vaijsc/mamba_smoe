@@ -10,7 +10,7 @@ import time
 import torch.nn as nn
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_ft4 import TransformerSeq
+from models_ft5 import TransformerSeq
 from trainer import train_iteration, full_eval
 import datetime
 import wandb
@@ -84,7 +84,7 @@ def launch(
     # PATH='/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/mamba_smoe_4.pt'
     # PATH='/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/2csmoe_bs32.pt'
     # PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe_ft3.pt'
-    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/hier_tok.pt'
+    PATH = '/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/smoe.pt'
     checkpoint = torch.load(PATH)
     # import ipdb; ipdb.set_trace()
     from collections import OrderedDict
@@ -97,7 +97,7 @@ def launch(
     state_dict = OrderedDict(state_dict)
     # model.load_state_dict(state_dict)
     # import ipdb; ipdb.set_trace()
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict, strict=False)
 
     for name, module in model.named_modules():
         if 'smoe' not in name:
