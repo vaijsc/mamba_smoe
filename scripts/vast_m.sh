@@ -15,6 +15,9 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 80 \
+--wandb-flag \
+--project-name hier_moe \
+--job-name smoe_m \
 --batch-sz 48 \
 --batch-split 2 \
 --nbatches 1000 \
