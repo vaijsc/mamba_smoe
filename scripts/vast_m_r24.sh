@@ -26,7 +26,7 @@ args="
 "
  
 echo "Training ..."
-WANDB_API_KEY=99a0a70a15a59905811d9ab32443e1a18cad8b1a CUDA_VISIBLE_DEVICES='0,1' python -m torch.distributed.launch --master_port 10018 --nproc_per_node=2 --use_env train_r24.py $args
+WANDB_API_KEY=99a0a70a15a59905811d9ab32443e1a18cad8b1a CUDA_VISIBLE_DEVICES='3,4' python -m torch.distributed.launch --master_port 10019 --nproc_per_node=2 --use_env train_r24.py $args
 
 echo "Evaluation ..."
-WANDB_API_KEY=99a0a70a15a59905811d9ab32443e1a18cad8b1a CUDA_VISIBLE_DEVICES='0,1' python -m torch.distributed.launch --master_port 10018 --nproc_per_node=2 --use_env train_r24.py $args --resume --full-eval-mode
+WANDB_API_KEY=99a0a70a15a59905811d9ab32443e1a18cad8b1a CUDA_VISIBLE_DEVICES='3,4' python -m torch.distributed.launch --master_port 10019 --nproc_per_node=2 --use_env train_r24.py $args --resume --full-eval-mode
