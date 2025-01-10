@@ -36,7 +36,7 @@ def _fmoe_general_global_forward(
     Intermediate results like expert counts are hidden from users by this
     function.
     """
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     (
         pos,
         local_expert_count,

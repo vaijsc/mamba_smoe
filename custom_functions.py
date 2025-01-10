@@ -64,7 +64,7 @@ def prepare_forward(gate, num_expert, world_size):
         gate, num_expert, world_size
     )
     with torch.no_grad():
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         fwd_expert_count = global_expert_count.view(world_size, num_expert).sum(dim=0)
         fwd_batch_size = int(fwd_expert_count.sum().item())
     return (
