@@ -286,8 +286,9 @@ class FMoE(nn.Module):
             gate_top_k_idx_1 = gate_top_k_idx_1[mask == 0, :]
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
         
-        # import ipdb; ipdb.set_trace()
-        gate_weight1 = (torch.sigmoid(self.weights(moe_inp)) > 0.5).int()
+        import ipdb; ipdb.set_trace()
+        device = moe_inp.device
+        gate_weight1 = (torch.sigmoid(self.weights(moe_inp)) > 0.5).int().to(device)
         gate_weight2 = 1 - gate_weight1
         mask_1 = gate_weight1.sum(dim=1) > 0  # Rows where gate_weight1 has non-zero values
         mask_2 = gate_weight2.sum(dim=1) > 0  # Rows where gate_weight2 has non-zero values
@@ -387,7 +388,7 @@ class FMoE(nn.Module):
         # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
         # moe_outp = self.weights(moe_outp)
         # Create an empty result tensor and reassign based on masks
-        moe_outp = torch.zeros_like(moe_inp)
+        moe_outp = torch.zeros_like(moe_inp).to(device)
         moe_outp[mask_1] = moe_outp_1
         moe_outp[mask_2] = moe_outp_2
 
