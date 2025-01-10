@@ -36,7 +36,7 @@ def _fmoe_general_global_forward(
     Intermediate results like expert counts are hidden from users by this
     function.
     """
-    # import ipdb; ipdb.set_trace()
+    import ipdb; ipdb.set_trace()
     (
         pos,
         local_expert_count,
@@ -286,12 +286,12 @@ class FMoE(nn.Module):
             gate_top_k_idx_1 = gate_top_k_idx_1[mask == 0, :]
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
         
-        # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
         device = moe_inp.device
         gate_weight1 = (torch.sigmoid(self.weights(moe_inp)) > 0.5).int().to(device)
         gate_weight2 = 1 - gate_weight1
-        mask_1 = gate_weight1.sum(dim=1) > 0  # Rows where gate_weight1 has non-zero values
-        mask_2 = gate_weight2.sum(dim=1) > 0  # Rows where gate_weight2 has non-zero values
+        mask_1 = (gate_weight1.sum(dim=1) > 0).to(device)  # Rows where gate_weight1 has non-zero values
+        mask_2 = (gate_weight2.sum(dim=1) > 0).to(device)  # Rows where gate_weight2 has non-zero values
         moe_inp_1 = gate_weight1 * moe_inp
         moe_inp_2 = gate_weight2 * moe_inp
         moe_inp_1_filtered = moe_inp_1[mask_1]
@@ -303,8 +303,8 @@ class FMoE(nn.Module):
         gate_top_k_idx_2_filtered = gate_top_k_idx_2_[mask_2]
         self.current_expert_range = (0, 8)
         fwd_1 = _fmoe_general_global_forward(
-            moe_inp_1_filtered,
-            gate_top_k_idx_1_filtered,
+            moe_inp_1_filtered.to(device),
+            gate_top_k_idx_1_filtered.to(device),
             self.expert_fn,
             self.num_expert,
             self.world_size,
@@ -312,8 +312,8 @@ class FMoE(nn.Module):
         )
         self.current_expert_range = (8, 16)
         fwd_2 = _fmoe_general_global_forward(
-            moe_inp_2_filtered,
-            gate_top_k_idx_2_filtered,
+            moe_inp_2_filtered.to(device),
+            gate_top_k_idx_2_filtered.to(device),
             self.expert_fn,
             self.num_expert,
             self.world_size,
