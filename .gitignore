@@ -6,3 +6,5 @@ vmoe/result
 vmoe/__pycache__
 logs/moe.txt
 moe.txt
+gates/__pycache__
+fastmoe/__pycache__
