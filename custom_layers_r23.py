@@ -286,7 +286,7 @@ class FMoE(nn.Module):
             gate_top_k_idx_1 = gate_top_k_idx_1[mask == 0, :]
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
         
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         device = moe_inp.device
         gate_weight1 = (torch.sigmoid(self.weights(moe_inp)) > 0.5).int().to(device)
         gate_weight2 = 1 - gate_weight1
