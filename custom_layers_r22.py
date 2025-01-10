@@ -423,7 +423,10 @@ class FMoE(nn.Module):
             out = torch.zeros((num_token, d), device=tensor.device)  # Shape [n, d]
 
             # Use scatter_add with weighted tensor
-            weighted_tensor = flat_G.unsqueeze(-1) * flat_tensor  # Shape [e*k, d]
+            try:
+                weighted_tensor = flat_G.unsqueeze(-1) * flat_tensor  # Shape [e*k, d]
+            except:
+                print(f"{flat_G=} \n{flat_tensor=} \n{flat_G.shape=} \n{flat_tensor.shape=}")
             out = out.index_add_(0, flat_I, weighted_tensor)  # Scatter-add with index_add_
 
             return out

@@ -70,6 +70,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         
 
     def forward(self, inp, return_all_scores=False):
+        # inp torch.Size([12288, 352])
         # import ipdb; ipdb.set_trace()
         num_token, _ = inp.shape
         expert_top_k = num_token * self.capacity // (self.tot_expert - self.tot_expert // 2)

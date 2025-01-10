@@ -8,7 +8,7 @@ import tqdm
 def _tokenize(text_path, dictionary_to_update):
     """Tokenizes a text file."""
     print("Tokenizing {}".format(text_path))
-    breakpoint()
+    # breakpoint()
     assert os.path.exists(text_path)
 
 
