@@ -19,7 +19,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/smoe_m_r23.pt \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/smoe_m_r23_1.pt \
 "
  
 # --wandb-flag \
