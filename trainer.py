@@ -29,6 +29,7 @@ def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
             )
 
         if load_balance > 0:
+            # import ipdb; ipdb.set_trace()
             balance_loss = 0
             for name, m in model.named_modules():
                 if isinstance(m, CustomNaiveGate_Balance_SMoE) or isinstance(
