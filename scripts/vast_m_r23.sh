@@ -1,3 +1,4 @@
+export CUDA_LAUNCH_BLOCKING=1
 args="
 --data /home/anh/wikitext-103  \
 --base_arch transformer \
