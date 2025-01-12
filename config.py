@@ -23,7 +23,7 @@ PARAMS_CONFIG = {
         },
         "--wandb":{
             "type": str,
-            "default": "True",
+            "default": "False",
             "help": "Activate wandb logging or not",
             "dest": "wandb",
         },
