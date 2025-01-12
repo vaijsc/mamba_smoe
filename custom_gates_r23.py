@@ -31,7 +31,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1]
         fraction_expert = (
             torch.scatter_add(
-                torch.zeros(self.tot_expert, device=valid_idx.device),
+                torch.zeros(self.tot_expert // 2, device=valid_idx.device),
                 0,
                 valid_idx,
                 torch.ones_like(valid_idx, dtype=torch.float),
@@ -69,8 +69,8 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_score_1 = F.softmax(gate_top_k_val_1, dim=-1)
         gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
-            self.set_load_balance(gate, gate_top_k_idx_1)
-            self.set_load_balance(gate, gate_top_k_idx_2)
+            self.set_load_balance(gate[:, : self.tot_expert //2], gate_top_k_idx_1)
+            self.set_load_balance(gate[:, self.tot_expert // 2 :], gate_top_k_idx_2)
 
         if return_all_scores:
             return gate_top_k_idx, gate_score_1, gate_score_2, gate
