@@ -277,4 +277,28 @@ def launch(
 
 
 if __name__ == "__main__":
-    launch(**get_params(params_config=PARAMS_CONFIG))
+    param_config = get_params(params_config=PARAMS_CONFIG)
+    # launch(**get_params(params_config=PARAMS_CONFIG))
+    comment = "lb_smoe_m" + "-"
+    
+    data_name = os.path.basename(param_config["data_params"]["data_path"])
+    gate_name = param_config["model_params"]["gate_name"]
+    architecture = param_config["model_params"]["architecture"]
+    hidden_size = param_config["model_params"]["hidden_size"]
+
+    name_wandb = comment \
+        + f"data_{data_name}" + "-"\
+        + f"gate_{gate_name}" + "-"\
+        + f"arch_{architecture}" + "-"\
+        + f"hidden_{hidden_size}"\
+
+    wandb.login(key="99a0a70a15a59905811d9ab32443e1a18cad8b1a")
+
+    if param_config["env_params"]["wandb"] == "False":
+        wandb.init(project=f'hier_moe', entity='vinai_batch11', config={}, name=name_wandb, mode="disabled")
+    else:
+        wandb.init(project=f'hier_moe', entity='vinai_batch11', config={}, name=name_wandb, mode="online")
+    wandb.config.update(param_config)
+    wandb.save("/home/anh/MomentumSMoE/result/train.py")
+    launch(**param_config)
+    wandb.finish()

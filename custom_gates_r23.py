@@ -17,7 +17,7 @@ __all__ = [
 
 
 class CustomNaiveGate_Balance_SMoE(BaseGate):
-    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=False):
+    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=True):
         super().__init__(num_expert, world_size)
         self.gate = nn.Linear(d_model, self.tot_expert)
         self.top_k = top_k
@@ -26,7 +26,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.loss = None
 
     def set_load_balance(self, gate, gate_top_k_idx):
-
+        # import ipdb; ipdb.set_trace()
         score = F.softmax(gate, dim=-1)
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1]
         fraction_expert = (
@@ -65,14 +65,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )  # [.. x top_k] 
             gate_top_k_val_1 = gate_top_k_val_1.view(-1, self.top_k)  # (BxL) x 1 x top_k
             gate_top_k_val_2 = gate_top_k_val_2.view(-1, self.top_k)  # (BxL) x 1 x top_k
-
-        """
-        ipdb> gate_top_k_val.shape
-        torch.Size([2048, 2])
-        ipdb> gate_top_k_idx.shape
-        torch.Size([2048, 2])
-        """
-        
+                    
         gate_score_1 = F.softmax(gate_top_k_val_1, dim=-1)
         gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
