@@ -21,6 +21,12 @@ PARAMS_CONFIG = {
             "help": "used in distributed training",
             "dest": "local_rank",
         },
+        "--wandb":{
+            "type": str,
+            "default": "True",
+            "help": "Activate wandb logging or not",
+            "dest": "wandb",
+        },
     },
     # data-specific
     "data_params": {
