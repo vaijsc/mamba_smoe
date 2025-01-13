@@ -42,7 +42,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             / valid_idx.numel()
         )
-        print(f'Balancing for expert cluster 1: {fraction_expert=}')
+        # print(f'Balancing for expert cluster 1: {fraction_expert=}')
         prob_expert = score.sum(dim=0) / valid_idx.numel() * 2 # top2 
         loss = (fraction_expert * prob_expert).sum() * (self.tot_expert / 2)
         # self.loss = loss
@@ -55,7 +55,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_weight1 = (gate_weight > 0.5).float()
         gate_weight2 = 1 - gate_weight1
         
-        print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
+        # print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
         n = inp.shape[0]
         n_1 = gate_weight1.sum()
         n_2 = n - n_1
