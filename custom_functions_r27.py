@@ -46,8 +46,6 @@ def count_by_gate(gate, num_expert, world_size, require_pos=True):
             fmoe_cuda.assign_pos(lec_cum, gate, pos)
     return pos, local_expert_count, global_expert_count
 
-
-
 def prepare_forward(gate, num_expert, world_size):
     r"""
     Prepare necessary information from gate output for MoE computation.
@@ -64,6 +62,10 @@ def prepare_forward(gate, num_expert, world_size):
         gate, num_expert, world_size
     )
     with torch.no_grad():
+        # import ipdb; ipdb.set_trace()
+        print("global_expert_count shape:", global_expert_count.shape)
+        print("global_expert_count values:", global_expert_count)
+        print('value: ', global_expert_count.view(world_size, num_expert).sum(dim=0))
         fwd_expert_count = global_expert_count.view(world_size, num_expert).sum(dim=0)
         fwd_batch_size = int(fwd_expert_count.sum().item())
     return (
