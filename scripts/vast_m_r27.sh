@@ -1,4 +1,6 @@
+export TORCH_USE_CUDA_DSA=1
 export CUDA_VISIBLE_DEVICES='0,1'
+
 args="
 --data /home/anh/wikitext-103  \
 --base_arch transformer \
@@ -28,7 +30,7 @@ args="
 #--job-name lb_smoe_m_r27 \
 
 echo "Training ..."
-python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train_r27.py $args
+CUDA_LAUNCH_BLOCKING=1 python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train_r27.py $args
 
 echo "Evaluation ..."
-python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train_r27.py $args --resume --full-eval-mode
+CUDA_LAUNCH_BLOCKING=1 python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train_r27.py $args --resume --full-eval-mode
