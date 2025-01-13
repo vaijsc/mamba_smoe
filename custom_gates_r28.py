@@ -28,7 +28,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.weight = nn.Linear(self.d_model, 1)
         self.capacity = 2 # 0.5, 1
 
-    def set_load_balance(self, gate, gate_top_k_idx):
+    def set_load_balance(self, gate, gate_top_k_idx, gate_1, gate_top_k_idx_1, gate_top_k_idx_2):
         # import ipdb; ipdb.set_trace()
         score = F.softmax(gate, dim=-1)
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1].long()
@@ -41,49 +41,46 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             / valid_idx.numel()
         )
-        print(f"Ratio of expert token choose: {fraction_expert=}\n")
         prob_expert = score.sum(dim=0) / valid_idx.numel()
-        print(f"Mean of expert connect tokens: {fraction_expert=}\n")
-        loss = (fraction_expert * prob_expert).sum() * self.tot_expert /2
-        print(f"Balancing add: {loss=} \nLoss before: {self.loss=}\n")
-        # return loss
+        """
+        [n_1, 2], [n_1, 1] ; [n_2, 2], [n_2, 1]
+        
+        loss_1 = n_1 / n * prob_0 * 2
+        loss_2 = n_2 / n * prob_1 * 2
+        
+        n x d, gate_1 n x 2 
+        gate_top_k_idx_1 n x 1, sum = n_1        
+        gate_top_k_idx_2 n x 1, sum = n_2
+        """
+        valid_idx_1 = gate_top_k_idx_1[gate_top_k_idx_1 > -1].long()
+        valid_idx_2 = gate_top_k_idx_2[gate_top_k_idx_2 > -1].long()
+        
+        fraction_1 = valid_idx_1.sum().float() / max(1, valid_idx_1.numel())
+        fraction_2 = valid_idx_2.sum().float() / max(1, valid_idx_2.numel())
+        # fraction_1 = 1
+        # fraction_2 = 1
+        # prob_expert_1 = gate_1.sum(dim=0) / max(1, valid_idx.numel())
+        # prob_expert 
+        prob_expert_1 = gate_1 / max(1, valid_idx.numel())
+        loss_1 = (fraction_1 * prob_expert_1[0]).sum() * 2
+        loss_2 = (fraction_2 * prob_expert_1[1]).sum() * 2
+        loss = (fraction_expert * prob_expert).sum() * (self.tot_expert / 2)
+        loss += loss_1 + loss_2
         self.loss = loss
     
-    def set_load_balance_layer_1(self, gate, gate_top_k_idx):
-        # import ipdb; ipdb.set_trace()
-        # score = F.softmax(gate, dim=-1)
-        valid_idx = gate_top_k_idx[gate_top_k_idx > -1].long()
-        fraction_expert = (
-            torch.scatter_add(
-                torch.zeros(2, device=valid_idx.device),
-                0,
-                valid_idx,
-                torch.ones_like(valid_idx, dtype=torch.float),
-            )
-            / valid_idx.numel()
-        )
-        prob_expert = gate.sum(dim=0) / valid_idx.numel()
-
-        loss = (fraction_expert * prob_expert).sum() * 2
-        return loss
-
-            
     def forward(self, inp, return_all_scores=False):
         device = inp.device
         gate_weight = torch.sigmoid(self.weight(inp)).to(device)
-        
         gate_weight1 = (gate_weight > 0.5).float()
         gate_weight2 = 1 - gate_weight1
         # gate_top_k_idx_weight = torch.cat([gate_weight1, gate_weight2], dim=-1) # [1024, 2]
-        # gate_weights = torch.cat([gate_weight, 1 - gate_weight], dim=-1)
+        gate_weights = torch.cat([gate_weight, 1 - gate_weight], dim=-1)
         
         # Identify non-zero rows
         non_zero_idx_1 = gate_weight1.sum(dim=-1) != 0  # Rows with non-zero gate_weight1
         non_zero_idx_2 = gate_weight2.sum(dim=-1) != 0  # Rows with non-zero gate_weight2
         # gate_top_k_idx_weight = torch.ca([non_zero_idx_1])
 
-        print(f'{gate_weight1.sum()=} \n{gate_weight2.sum()=} \n')
-        
         # Filter out zero rows for computation
         inp_1 = inp[non_zero_idx_1]
         inp_2 = inp[non_zero_idx_2]
@@ -129,15 +126,10 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_score_1 = F.softmax(gate_top_k_val_1, dim=-1)
         gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
-            self.set_load_balance(gate_1, gate_top_k_idx_1)
-            # self.set_load_balance(gate_1, gate_top_k_idx_1)
-            # loss_1  = self.set_load_balance(gate_1, gate_top_k_idx_1) # loss for token choose expert layer 2
-            # import ipdb; ipdb.set_trace()
-            # loss_2 = self.set_load_balance_layer_1(gate_weights, gate_top_k_idx_weight) 
-            # loss_2 = self.set_load_balance(gate_2, gate_top_k_idx_2)
-            # self.loss = loss_1 + loss_2
-            # print(f"{loss_1=} \n {loss_2=} \n{self.loss=}")
-        
+            self.set_load_balance(gate_1, gate_top_k_idx_1, gate_weights.sum(dim=0), gate_weight1, gate_weight2)
+            # self.set_load_balance_layer_1(gate_weights, gate_weight1)
+            # self.set_load_balance_layer_2(gate_weights, gate_weight2)
+
         if return_all_scores:
             return inp_1, inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, non_zero_idx_1, non_zero_idx_2
         ### modify
