@@ -44,6 +44,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         prob_expert = score.sum(dim=0) / valid_idx.numel()
 
         loss = (fraction_expert * prob_expert).sum() * self.tot_expert /2
+        # print(f"{loss=} \n{self.loss=}")
         # return loss
         self.loss = loss
     
@@ -126,6 +127,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
             self.set_load_balance(gate_1, gate_top_k_idx_1)
+            # self.set_load_balance(gate_1, gate_top_k_idx_1)
             # loss_1  = self.set_load_balance(gate_1, gate_top_k_idx_1) # loss for token choose expert layer 2
             # import ipdb; ipdb.set_trace()
             # loss_2 = self.set_load_balance_layer_1(gate_weights, gate_top_k_idx_weight) 
