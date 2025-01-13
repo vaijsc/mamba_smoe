@@ -23,7 +23,7 @@ def get_moe_group():
     return _moe_group
 
 def count_by_gate(gate, num_expert, world_size, require_pos=True):
-    # import ipdb ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     with torch.no_grad():
         local_expert_count = torch.zeros(
             num_expert * world_size, device=gate.device, dtype=torch.int32
@@ -59,10 +59,44 @@ def prepare_forward(gate, num_expert, world_size):
         world_size: number of workers that hold different experts.
         comm: the communicator of all workers in the expert-parallel group.
     """
-    # # import ipdb ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     pos, local_expert_count, global_expert_count = count_by_gate(
         gate, num_expert, world_size
     )
+    with torch.no_grad():
+        fwd_expert_count = global_expert_count.view(world_size, num_expert).sum(dim=0)
+        fwd_batch_size = int(fwd_expert_count.sum().item())
+    return (
+        pos,
+        local_expert_count.cpu(),
+        global_expert_count.cpu(),
+        fwd_expert_count.cpu(),
+        fwd_batch_size,
+    )
+
+def prepare_forward_expert_choice(gate, num_expert, world_size):
+    r"""
+    Prepare necessary information from gate output for MoE computation.
+
+    Args:
+        gate: a 1-d Long Tensor representing the target expert of each input
+        sample.
+        num_expert: number of experts on each worker.
+        world_size: number of workers that hold different experts.
+        comm: the communicator of all workers in the expert-parallel group.
+    """
+    # import ipdb; ipdb.set_trace()
+    num_token_per_expert = gate.shape[1]
+    # import ipdb; ipdb.set_trace()
+    # pos, local_expert_count, global_expert_count = count_by_gate(
+    #     gate, num_expert, world_size
+    # )
+    pos = gate.contiguous().view(-1).clone()
+    with torch.no_grad():
+        local_expert_count_first_part = torch.zeros((num_expert // 2,), dtype=int)
+        local_expert_count_second_part = torch.full((num_expert - num_expert // 2,), num_token_per_expert, dtype=int)
+        local_expert_count = torch.cat([local_expert_count_first_part, local_expert_count_second_part]).contiguous()
+        global_expert_count = local_expert_count.clone()
     with torch.no_grad():
         fwd_expert_count = global_expert_count.view(world_size, num_expert).sum(dim=0)
         fwd_batch_size = int(fwd_expert_count.sum().item())
@@ -267,4 +301,3 @@ class Slice(Function):
         torch.cuda.synchronize()
         grad_out = torch.cat(tensor_list, dim=0)
         return grad_out, None, None, None
-

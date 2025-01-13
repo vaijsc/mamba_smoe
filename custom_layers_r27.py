@@ -4,9 +4,9 @@ import math, random
 import torch
 import torch.nn as nn
 import tree
-from custom_functions import prepare_forward, ensure_comm
-from custom_functions import MOEScatter, MOEGather
-from custom_functions import AllGather, Slice
+from custom_functions_r27 import prepare_forward, prepare_forward_expert_choice, ensure_comm
+from custom_functions_r27 import MOEScatter, MOEGather
+from custom_functions_r27 import AllGather, Slice
 from gates import NaiveGate
 import torch.nn.functional as F
 from fastermoe.config import switch_from_env
@@ -78,6 +78,87 @@ def _fmoe_general_global_forward(
     
     outp = tree.map_structure(gather_func, x)
     return outp
+
+def _fmoe_expert_choice_general_global_forward(
+    inp, gate, expert_fn, num_expert, world_size, **kwargs
+):
+    r"""
+    A private function that performs the following steps to complete the MoE
+    computation.
+    * Count the number of tokens from each worker to each expert.
+    * Send the features to their target position so that input features to each
+    expert are contiguous in memory.
+    * Perform the forward computation of the experts using `expert_fn`
+    * Gather the output features of experts back, and reorder them as sentences.
+    Intermediate results like expert counts are hidden from users by this
+    function.
+    """
+    # print(f"gate in general global forward {gate.shape}")
+    # num_token = inp.shape[-2]
+    # print(f"{num_expert=}")
+    # print(f"{world_size=}")
+    # print(f"{expert_fn=}")
+    # print(f"{gate=}")
+    # token_counts = torch.bincount(gate.flatten())
+    # print(f"{max(token_counts)=}")
+    # print(f"{inp.shape=}")
+    # import ipdb; ipdb.set_trace()
+    (
+        pos,
+        local_expert_count,
+        global_expert_count,
+        fwd_expert_count,
+        fwd_batch_size,
+    ) = prepare_forward_expert_choice(gate, num_expert, world_size)
+    # tmp = pos[local_expert_count[7]:local_expert_count[8]]
+    # tmp = torch.sort(tmp)
+    # print(f"{tmp=} {pos.shape=} {max(pos)=}")
+    # print(f"{local_expert_count=} {local_expert_count.shape=} {local_expert_count.is_contiguous()=}")
+    # print(f"{global_expert_count=} {global_expert_count.shape=} {global_expert_count.is_contiguous()=}")
+    # print(f"{fwd_expert_count=} {fwd_expert_count.shape=} {fwd_expert_count.is_contiguous()=}")
+    # print(f"{fwd_batch_size=}")
+    # haha = gate[0]
+    # print(f"{haha=}")
+
+    def scatter_func(tensor):
+        return MOEScatter.apply(
+            tensor,
+            pos,
+            local_expert_count,
+            global_expert_count,
+            fwd_batch_size,
+            world_size,
+        )
+    x = tree.map_structure(scatter_func, inp)
+    # print(f"{x.shape=}")
+    # print(f"siuuuu {x=}")
+    # import ipdb ipdb.set_trace()
+    # x.shape torch.Size([16384, 128])
+    # fwd_expert_count torch.Size([16]) 
+    # tensor([1101, 1544, 1141,  725,  483, 1337,  787,  868, 1427, 1304, 1118,  904,
+    #    970,  896,  837,  942])
+    """
+        expert_fn
+        <bound method FMoE.expert_fn of CustomizedMoEPositionwiseFF(
+        (gate): CustomNaiveGate_Balance_SMoE(
+            (gate): Linear(in_features=128, out_features=16, bias=True)
+        )
+        (experts): _Expert(
+            (htoh4): FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
+            (h4toh): FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
+            (activation): Sequential(
+            (0): ReLU()
+            (1): Dropout(p=0.7, inplace=False)
+            )
+        )
+        (layer_norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        (dropout): Dropout(p=0.7, inplace=False)
+        )>
+    """
+    x = expert_fn(x, fwd_expert_count)
+
+    return x
+
 
 
 fmoe_faster_schedule = False
@@ -152,8 +233,6 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        # self.weights = nn.Linear(2 * self.d_model, self.d_model)
-        self.weights = nn.Linear(self.d_model, 1)
 
     def expert_fn(self, inp, fwd_expert_count):
         r"""
@@ -245,8 +324,12 @@ class FMoE(nn.Module):
 
             moe_inp = tree.map_structure(slice_func, moe_inp)
         
+        
+        ############################################### gate ####################################################
+        # [n_1, d], [n_2, d], [n_1, 2], [n_1, 2], [n_2, 2], [n_2, 2], [n_1, 1], [n_2, 1] 
+        # n_1 + n_2 = moe_inp.shape[0]
         # import ipdb; ipdb.set_trace()
-        gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
+        moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, non_zero_idx_1, non_zero_idx_2 = self.gate(moe_inp)
         
         if hasattr(self.gate, "dynamic_top_k"):
             self.top_k = self.gate.dynamic_top_k
@@ -267,46 +350,25 @@ class FMoE(nn.Module):
             moe_inp = tree.map_structure(delete_mask_func, moe_inp)
             gate_top_k_idx_1 = gate_top_k_idx_1[mask == 0, :]
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
+        self.current_expert_range = (0, 8)
+        fwd_1 = _fmoe_general_global_forward(
+            moe_inp_1,
+            gate_top_k_idx_1,
+            self.expert_fn,
+            self.num_expert,
+            self.world_size,
+            experts=self.experts,
+        )
+        self.current_expert_range = (8, 16)
+        fwd_2 = _fmoe_expert_choice_general_global_forward(
+            moe_inp_2,
+            gate_top_k_idx_2,
+            self.expert_fn,
+            self.num_expert,
+            self.world_size,
+            experts=self.experts,
+        ) # []
         
-        # import ipdb; ipdb.set_trace()
-        # Compute gate weights
-        device = moe_inp.device
-        gate_weights = torch.sigmoid(self.weights(moe_inp)).to(device)
-        gate_weight1 = (gate_weights > 0.5).float()
-        gate_weight2 = 1 - gate_weight1
-
-        # Identify non-zero rows
-        non_zero_idx_1 = gate_weight1.sum(dim=-1) != 0  # Rows with non-zero gate_weight1
-        non_zero_idx_2 = gate_weight2.sum(dim=-1) != 0  # Rows with non-zero gate_weight2
-
-        # Filter out zero rows for computation
-        filtered_moe_inp_1 = moe_inp[non_zero_idx_1]
-        filtered_moe_inp_2 = moe_inp[non_zero_idx_2]
-
-        # Adjust gate indices for the second expert group
-        gate_top_k_idx_2 = gate_top_k_idx_2 + 8  # Offset for the second group of experts
-
-        # Process filtered inputs for each expert group
-        expert_ranges = [(0, 8), (8, 16)]
-        filtered_fwd_outputs = []
-
-        for (start, end), inp, non_zero_idx, gate_idx in zip(
-            expert_ranges,
-            [filtered_moe_inp_1, filtered_moe_inp_2],
-            [non_zero_idx_1, non_zero_idx_2],
-            [gate_top_k_idx_1, gate_top_k_idx_2]
-        ):
-            self.current_expert_range = (start, end)
-            fwd = _fmoe_general_global_forward(
-                inp,
-                gate_idx[non_zero_idx],
-                self.expert_fn,
-                self.num_expert,
-                self.world_size,
-                experts=self.experts,
-            )
-            filtered_fwd_outputs.append(fwd)      
-
         # recover deleted tensors
         if self.mask is not None and self.mask_dict is not None:
 
@@ -331,44 +393,66 @@ class FMoE(nn.Module):
             ipdb> moe_outp.shape
             torch.Size([2048, 2, 128])
             """
-            moe_outp_1 = tree.map_structure(recover_func, filtered_fwd_outputs[0])
-            moe_outp_2 = tree.map_structure(recover_func, filtered_fwd_outputs[1])
-        else:
-            
+            moe_outp_1 = tree.map_structure(recover_func, fwd_1)
+            moe_outp_2 = tree.map_structure(recover_func, fwd_2)
+        else:            
             def view_func(tensor):
                 dim = tensor.shape[-1]
                 tensor = tensor.view(-1, self.top_k, dim)
                 return tensor
 
-            moe_outp_1 = tree.map_structure(view_func, filtered_fwd_outputs[0])
-            moe_outp_2 = tree.map_structure(view_func, filtered_fwd_outputs[1])
-            """
-            ipdb> fwd.shape
-            torch.Size([4096, 128])
-            """
-        gate_score_1 = gate_weight1 * gate_score_1 
-        gate_score_1_ = gate_score_1[non_zero_idx_1].view(-1, 1, self.top_k)
-        gate_score_2 = gate_weight2 * gate_score_2 
-        gate_score_2_ = gate_score_2[non_zero_idx_2].view(-1, 1, self.top_k)
+            moe_outp_1 = tree.map_structure(view_func, fwd_1)
+            moe_outp_2 = fwd_2
+            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
         """
+        ipdb> fwd.shape
+        torch.Size([4096, 128])
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
         """
+        gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
+        # gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
+        
         def bmm_func(gate_score, tensor):
             # import ipdb; ipdb.set_trace()
             dim = tensor.shape[-1]
             tensor = torch.bmm(gate_score, tensor).reshape(-1, dim)
             return tensor
+        def expert_combine_func(num_token, gate, gate_score, tensor):
+            """
+            num_token: Total number of tokens (n)
+            gate: Indices of tokens assigned to experts (shape [e, k])
+            gate_score: Gating weights (shape [e, k])
+            tensor: Expert outputs (shape [e, k, d])
+            Returns:
+            out: Combined output (shape [n, d])
+            """
+            # import ipdb; ipdb.set_trace()
+            d = tensor.shape[-1]
+            flat_I = gate.flatten()  # Shape [e*k]
+            flat_G = gate_score.flatten()  # Shape [e*k]
+            flat_tensor = tensor.view(-1, d)  # Shape [e*k, d]
+
+            # Initialize output tensor
+            out = torch.zeros((num_token, d), device=tensor.device)  # Shape [n, d]
+
+            # Use scatter_add with weighted tensor
+            weighted_tensor = flat_G.unsqueeze(-1) * flat_tensor  # Shape [e*k, d]
+            out = out.index_add_(0, flat_I, weighted_tensor)  # Scatter-add with index_add_
+
+            return out
+
         """
         moe_outp
         ipdb> moe_outp.shape
         torch.Size([2048, 2, 128])
         """
         # import ipdb; ipdb.set_trace()
-        moe_outp_1 = tree.map_structure(bmm_func, gate_score_1_, moe_outp_1)
-        moe_outp_2 = tree.map_structure(bmm_func, gate_score_2_, moe_outp_2)
-        # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
-        # moe_outp = self.weights(moe_outp)
+        num_token, _ = moe_inp_2.shape
+        moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
+        # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
+        moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
+        device = moe_inp.device
         moe_outp = torch.zeros_like(moe_inp).to(device)
         moe_outp[non_zero_idx_1] = moe_outp_1
         moe_outp[non_zero_idx_2] = moe_outp_2

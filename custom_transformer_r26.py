@@ -3,8 +3,8 @@ import argparse
 import math, random
 import torch
 import torch.nn as nn
-from custom_layers import FMoE
-from custom_layers import FMoELinear
+from custom_layers_r26 import FMoE
+from custom_layers_r26 import FMoELinear
 from custom_layers_opt import FMoEOpt
 
 
@@ -19,19 +19,28 @@ class _Expert(nn.Module):
         self.htoh4 = FMoELinear(num_expert, d_model, d_hidden, bias=True, rank=rank)
         self.h4toh = FMoELinear(num_expert, d_hidden, d_model, bias=True, rank=rank)
         self.activation = activation
+        self.expert_mask = None
+
+    def set_expert_mask(self, mask):
+        """Set mask for active/inactive experts"""
+        self.expert_mask = mask
 
     def forward(self, inp, fwd_expert_count):
-        # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         r"""
         First expand input to 4h (the hidden size is variable, but is called h4
-        for convenience). Then perform activation. Finally shirink back to h.
+        for convenience). Then perform activation. Finally shrink back to h.
         """
-        # inp torch.Size([16384, 128]), fwd_expert_count shape 16
-        x = self.htoh4(inp, fwd_expert_count)
-        x = self.activation(x)
-        x = self.h4toh(x, fwd_expert_count) # torch.Size([16384, 128])
-        return x
+        if self.expert_mask is not None:
+            # Apply expert mask to the expert counts
+            masked_count = fwd_expert_count * self.expert_mask
+        else:
+            masked_count = fwd_expert_count
 
+        x = self.htoh4(inp, masked_count)
+        x = self.activation(x)
+        x = self.h4toh(x, masked_count)
+        return x
 
 class FMoETransformerMLP(FMoE):
     r"""
@@ -60,16 +69,17 @@ class FMoETransformerMLP(FMoE):
         self.mark_parallel_comm(expert_dp_comm)
 
     def forward(self, inp: torch.Tensor):
-        # # import ipdb ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         r"""
         This module wraps up the FMoE module with reshape, residual and layer
         normalization.
         """
-        original_shape = inp.shape # torch.Size([32, 256, 128])
+        # input torch.Size([8, 256, 128])
+        original_shape = inp.shape
         inp = inp.reshape(-1, self.d_model) # self.d_model 128
-        # inp torch.Size([8192, 128])
-        output = super().forward(inp) # output shape torch.Size([16384, 128])
-        return output.reshape(original_shape) # torch.Size([32, 256, 128])
+        # torch.Size([2048, 128])
+        output = super().forward(inp) 
+        return output.reshape(original_shape) # torch.Size([8, 256, 128])
 
 
 class FMoETransformerMLPOpt(FMoEOpt):

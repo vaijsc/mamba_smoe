@@ -17,13 +17,15 @@ __all__ = [
 
 
 class CustomNaiveGate_Balance_SMoE(BaseGate):
-    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=False):
+    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=True):
         super().__init__(num_expert, world_size)
         self.gate = nn.Linear(d_model, self.tot_expert)
         self.top_k = top_k
         self.dense_moe_flag = False
         self.g_blance = g_blance
         self.loss = None
+        self.d_model = d_model
+        self.weights = nn.Linear(self.d_model, 1)
 
     def set_load_balance(self, gate, gate_top_k_idx):
 
@@ -31,7 +33,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1]
         fraction_expert = (
             torch.scatter_add(
-                torch.zeros(self.tot_expert, device=valid_idx.device),
+                torch.zeros(self.tot_expert // 2, device=valid_idx.device),
                 0,
                 valid_idx,
                 torch.ones_like(valid_idx, dtype=torch.float),
@@ -40,32 +42,60 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         )
         prob_expert = score.sum(dim=0) / valid_idx.numel()
 
-        loss = (fraction_expert * prob_expert).sum() * self.tot_expert
-        self.loss = loss
-
+        loss = (fraction_expert * prob_expert).sum() * self.tot_expert / 2
+        return loss
+            
     def forward(self, inp, return_all_scores=False):
+        # import ipdb; ipdb.set_trace()
+        device = inp.device
+        gate_weights = torch.sigmoid(self.weights(inp)).to(device)
+        
+        gate_weight1 = (gate_weights > 0.5).float()
+        gate_weight2 = 1 - gate_weight1
 
-        gate = self.gate(inp)
+        # Identify non-zero rows
+        non_zero_idx_1 = gate_weight1.sum(dim=-1) != 0  # Rows with non-zero gate_weight1
+        non_zero_idx_2 = gate_weight2.sum(dim=-1) != 0  # Rows with non-zero gate_weight2
 
+        # Filter out zero rows for computation
+        inp_1 = inp[non_zero_idx_1]
+        inp_2 = inp[non_zero_idx_2]
+
+        # Filter out gate weights
+        gate = self.gate(inp) # [1024, 16]
+        gate_1 = gate[non_zero_idx_1][:, : self.tot_expert//2]
+        gate_2 = gate[non_zero_idx_2][:, self.tot_expert//2 :]
+        
         if self.dense_moe_flag:
             gate = torch.ones_like(gate)  # average the importance of all experts
-            gate_top_k_val, gate_top_k_idx = torch.topk(
-                gate, k=self.tot_expert, dim=-1, largest=True, sorted=False
+            gate_top_k_val_1, gate_top_k_idx_1 = torch.topk(
+                gate_1, k=self.tot_expert, dim=-1, largest=True, sorted=False
             )
-            gate_top_k_val = gate_top_k_val.view(-1, self.tot_expert)
+            gate_top_k_val_2, gate_top_k_idx_2 = torch.topk(
+                gate_2, k=self.tot_expert, dim=-1, largest=True, sorted=False
+            )
+            gate_top_k_val_1 = gate_top_k_val_1.view(-1, self.tot_expert)
+            gate_top_k_val_2 = gate_top_k_val_2.view(-1, self.tot_expert)
         else:
-            gate_top_k_val, gate_top_k_idx = torch.topk(
-                gate, k=self.top_k, dim=-1, largest=True, sorted=False
-            )  # [.. x top_k]
-            gate_top_k_val = gate_top_k_val.view(-1, self.top_k)  # (BxL) x 1 x top_k
-
-        gate_score = F.softmax(gate_top_k_val, dim=-1)
+            gate_top_k_val_1, gate_top_k_idx_1 = torch.topk(
+                gate_1, k=self.top_k, dim=-1, largest=True, sorted=False
+            ) 
+            gate_top_k_val_2, gate_top_k_idx_2 = torch.topk(
+                gate_2, k=self.top_k, dim=-1, largest=True, sorted=False
+            ) 
+            gate_top_k_val_1 = gate_top_k_val_1.view(-1, self.top_k)  # (BxL) x 1 x top_k
+            gate_top_k_val_2 = gate_top_k_val_2.view(-1, self.top_k)  # (BxL) x 1 x top_k
+            
+        gate_score_1 = F.softmax(gate_top_k_val_1, dim=-1)
+        gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
-            self.set_load_balance(gate, gate_top_k_idx)
-
+            loss_1 = self.set_load_balance(gate_1, gate_top_k_idx_1)
+            loss_2 = self.set_load_balance(gate_2, gate_top_k_idx_2)
+            self.loss = loss_1 + loss_2
         if return_all_scores:
-            return gate_top_k_idx, gate_score, gate
-        return gate_top_k_idx, gate_score
+            return inp_1, inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, non_zero_idx_1, non_zero_idx_2
+        ### modify
+        return inp_1, inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, non_zero_idx_1, non_zero_idx_2
 
 
 class CustomNaiveGate_Balance_XMoE(BaseGate):
