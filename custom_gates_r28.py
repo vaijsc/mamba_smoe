@@ -54,7 +54,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_weight1 = (gate_weight > 0.5).float()
         gate_weight2 = 1 - gate_weight1
         
-        print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
+        # print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
         n = inp.shape[0]
         n_1 = gate_weight1.sum()
         n_2 = n - n_1
