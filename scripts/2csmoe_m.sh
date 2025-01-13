@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=bs192_24
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs192_24_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs192_24.txt
+#SBATCH --job-name=bs48_4
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs48_4_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/bs48_4.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --mem-per-gpu=50G
@@ -35,19 +35,19 @@ args="
 --lr 0.0007 \
 --lr-warmup 4000 \
 --niter 80 \
---batch-sz 192 \
---batch-split 24 \
+--batch-sz 48 \
+--batch-split 4 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/bs192_24.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/bs48_4.pt \
 "
  
 # 0.0007
 # bs 48 -> 16 -> 32
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10017 --nproc_per_node=1 --use_env train.py $args
+python -m torch.distributed.launch --master_port 10021 --nproc_per_node=1 --use_env train.py $args
 
 echo "Evaluation ..."
 # CUDA_VISIBLE_DEVICES='0,1' 
-python -m torch.distributed.launch --master_port 10017 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10021 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode

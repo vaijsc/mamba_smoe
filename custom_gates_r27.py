@@ -41,11 +41,11 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             / valid_idx.numel()
         )
-        print(f"Ratio of expert token choose: {fraction_expert=}\n")
+        # print(f"Ratio of expert token choose: {fraction_expert=}\n")
         prob_expert = score.sum(dim=0) / valid_idx.numel()
-        print(f"Mean of expert connect tokens: {fraction_expert=}\n")
+        # print(f"Mean of expert connect tokens: {fraction_expert=}\n")
         loss = (fraction_expert * prob_expert).sum() * self.tot_expert /2
-        print(f"Balancing add: {loss=} \nLoss before: {self.loss=}\n")
+        # print(f"Balancing add: {loss=} \nLoss before: {self.loss=}\n")
         # return loss
         self.loss = loss
     
@@ -82,7 +82,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         non_zero_idx_2 = gate_weight2.sum(dim=-1) != 0  # Rows with non-zero gate_weight2
         # gate_top_k_idx_weight = torch.ca([non_zero_idx_1])
 
-        print(f'{gate_weight1.sum()=} \n{gate_weight2.sum()=} \n')
+        # print(f'{gate_weight1.sum()=} \n{gate_weight2.sum()=} \n')
         
         # Filter out zero rows for computation
         inp_1 = inp[non_zero_idx_1]

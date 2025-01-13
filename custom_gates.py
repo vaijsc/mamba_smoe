@@ -26,7 +26,9 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.loss = None
 
     def set_load_balance(self, gate, gate_top_k_idx):
-
+        # gate [1024, 16], idx [1024, 2] <-> mỗi token nó đã chắc chắn chọn 2
+        # [n_1, 2], idx, [n_1, 1] ; [n_2, 2], idx [n_2, 1]
+        # [n, 2], [n, 2]
         score = F.softmax(gate, dim=-1)
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1]
         fraction_expert = (
@@ -39,7 +41,6 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             / valid_idx.numel()
         )
         prob_expert = score.sum(dim=0) / valid_idx.numel()
-
         loss = (fraction_expert * prob_expert).sum() * self.tot_expert
         self.loss = loss
 

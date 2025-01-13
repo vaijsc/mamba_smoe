@@ -10,8 +10,8 @@ import time
 
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_r27 import TransformerSeq
-from trainer_r27 import train_iteration, full_eval
+from models_r28 import TransformerSeq
+from trainer_r28 import train_iteration, full_eval
 import datetime
 import wandb
 import os
@@ -72,7 +72,7 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r27.pt"
+    PATH = "/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/r28.pt"
     checkpoint = torch.load(PATH)
     from collections import OrderedDict
     state_dict = dict(checkpoint['model'])
@@ -85,7 +85,7 @@ def launch(
     # model.load_state_dict(state_dict)
     # import ipdb; ipdb.set_trace()
     model.load_state_dict(state_dict)
-    
+    # import ipdb; ipdb.set_trace()
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)
@@ -108,9 +108,9 @@ def launch(
     # create logger
     logger = Logger()
     # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
+    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
-    folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
+    # folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
     ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]

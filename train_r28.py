@@ -72,6 +72,7 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
+    # import ipdb; ipdb.set_trace()
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)

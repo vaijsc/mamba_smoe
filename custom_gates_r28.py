@@ -25,10 +25,11 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.g_blance = g_blance
         self.loss = None
         self.d_model = d_model
-        self.weight = nn.Linear(self.d_model, 1)
+        # self.weight = nn.Linear(self.d_model, 1)
+        self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
         self.capacity = 2 # 0.5, 1
 
-    def set_load_balance(self, gate, gate_top_k_idx, gate_1, gate_top_k_idx_1, gate_top_k_idx_2):
+    def set_load_balance(self, gate, gate_top_k_idx):
         # import ipdb; ipdb.set_trace()
         score = F.softmax(gate, dim=-1)
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1].long()
@@ -41,40 +42,25 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             / valid_idx.numel()
         )
-        prob_expert = score.sum(dim=0) / valid_idx.numel()
-        """
-        [n_1, 2], [n_1, 1] ; [n_2, 2], [n_2, 1]
-        
-        loss_1 = n_1 / n * prob_0 * 2
-        loss_2 = n_2 / n * prob_1 * 2
-        
-        n x d, gate_1 n x 2 
-        gate_top_k_idx_1 n x 1, sum = n_1        
-        gate_top_k_idx_2 n x 1, sum = n_2
-        """
-        valid_idx_1 = gate_top_k_idx_1[gate_top_k_idx_1 > -1].long()
-        valid_idx_2 = gate_top_k_idx_2[gate_top_k_idx_2 > -1].long()
-        
-        fraction_1 = valid_idx_1.sum().float() / max(1, valid_idx_1.numel())
-        fraction_2 = valid_idx_2.sum().float() / max(1, valid_idx_2.numel())
-        # fraction_1 = 1
-        # fraction_2 = 1
-        # prob_expert_1 = gate_1.sum(dim=0) / max(1, valid_idx.numel())
-        # prob_expert 
-        prob_expert_1 = gate_1 / max(1, valid_idx.numel())
-        loss_1 = (fraction_1 * prob_expert_1[0]).sum() * 2
-        loss_2 = (fraction_2 * prob_expert_1[1]).sum() * 2
+        prob_expert = score.sum(dim=0) / valid_idx.numel() * 2 # top2 
         loss = (fraction_expert * prob_expert).sum() * (self.tot_expert / 2)
-        loss += loss_1 + loss_2
-        self.loss = loss
+        # self.loss = loss
+        return loss
     
     def forward(self, inp, return_all_scores=False):
         device = inp.device
-        gate_weight = torch.sigmoid(self.weight(inp)).to(device)
+        # gate_weight = torch.sigmoid(self.weight(inp)).to(device)
+        gate_weight = torch.sigmoid(torch.matmul(inp, self.weight)).to(device)
         gate_weight1 = (gate_weight > 0.5).float()
         gate_weight2 = 1 - gate_weight1
+        
+        print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
+        n = inp.shape[0]
+        n_1 = gate_weight1.sum()
+        n_2 = n - n_1
+        
         # gate_top_k_idx_weight = torch.cat([gate_weight1, gate_weight2], dim=-1) # [1024, 2]
-        gate_weights = torch.cat([gate_weight, 1 - gate_weight], dim=-1)
+        # gate_weights = torch.cat([gate_weight, 1 - gate_weight], dim=-1)
         
         # Identify non-zero rows
         non_zero_idx_1 = gate_weight1.sum(dim=-1) != 0  # Rows with non-zero gate_weight1
@@ -126,10 +112,13 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_score_1 = F.softmax(gate_top_k_val_1, dim=-1)
         gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
-            self.set_load_balance(gate_1, gate_top_k_idx_1, gate_weights.sum(dim=0), gate_weight1, gate_weight2)
-            # self.set_load_balance_layer_1(gate_weights, gate_weight1)
-            # self.set_load_balance_layer_2(gate_weights, gate_weight2)
-
+            self.loss = self.set_load_balance(gate_1, gate_top_k_idx_1)
+            # print('self.loss = ', self.loss)
+            self.loss += (2 * n_2 / n + 2 * (n_1 - n_2) / n**2 * gate_weight.sum(dim=0).item()) # load balancing for the layer 1
+            # print('after = ', self.loss)
+            # self.loss += (2 * n_1 / n * gate_weight.sum(dim=0) /n + 2 * n_2 / n * (gate_weight).sum(dim=0) /n)
+        else:
+            self.loss = None
         if return_all_scores:
             return inp_1, inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, non_zero_idx_1, non_zero_idx_2
         ### modify
