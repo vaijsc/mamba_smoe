@@ -114,9 +114,9 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
             self.loss = self.set_load_balance(gate_1, gate_top_k_idx_1)
-            # print('self.loss = ', self.loss)
+            print('Balancing loss for layer 2: ', self.loss)
             self.loss += (2 * n_2 / n + 2 * (n_1 - n_2) / n**2 * gate_weight.sum(dim=0).item()) # load balancing for the layer 1
-            # print('after = ', self.loss)
+            print('Balancing loss for 2 layers: ', self.loss)
             # self.loss += (2 * n_1 / n * gate_weight.sum(dim=0) /n + 2 * n_2 / n * (gate_weight).sum(dim=0) /n)
         else:
             self.loss = None
