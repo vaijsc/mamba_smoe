@@ -72,7 +72,8 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    PATH = "/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/r28.pt"
+    # PATH = "/home/ubuntu/workspace/MomentumSMoE/result/checkpoints/r28.pt"
+    PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r28.pt"
     checkpoint = torch.load(PATH)
     from collections import OrderedDict
     state_dict = dict(checkpoint['model'])
@@ -108,9 +109,9 @@ def launch(
     # create logger
     logger = Logger()
     # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
+    # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
-    # folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
+    folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
     ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
