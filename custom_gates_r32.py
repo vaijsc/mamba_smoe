@@ -35,7 +35,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1].long()
         fraction_expert = (
             torch.scatter_add(
-                torch.zeros(4, device=valid_idx.device),
+                torch.zeros(10, device=valid_idx.device),
                 0,
                 valid_idx,
                 torch.ones_like(valid_idx, dtype=torch.float),
@@ -45,7 +45,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         # print(f'Balancing for expert cluster 1: {fraction_expert=}')
         # print(f'Balancing for expert cluster 1: {fraction_expert=}')
         prob_expert = score.sum(dim=0) / valid_idx.numel() * 2 # top2 
-        loss = (fraction_expert * prob_expert).sum() * 4
+        loss = (fraction_expert * prob_expert).sum() * 10
         # self.loss = loss
         return loss
     
@@ -76,12 +76,12 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         # import ipdb; ipdb.set_trace()
         # Filter out gate weights
         gate = self.gate(inp) # [1024, 16]
-        gate_1 = gate[non_zero_idx_1][:, :4]
+        gate_1 = gate[non_zero_idx_1][:, :10]
 
         # configuration for expert choose token
         num_token, _ = inp_2.shape
-        expert_top_k = num_token * self.capacity // (12)
-        gate_2 = gate[non_zero_idx_2][:, 4:] # [n_2, 8]
+        expert_top_k = num_token * self.capacity // (6)
+        gate_2 = gate[non_zero_idx_2][:, 10:] # [n_2, 8]
         # gate_idx_exp = torch.arange(self.tot_expert // 2, self.tot_expert, dtype=torch.float32).unsqueeze(-1).to(device.type) # [8, 9, 10, ..., 15]
         
         if self.dense_moe_flag:

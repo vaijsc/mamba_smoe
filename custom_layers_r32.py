@@ -350,7 +350,7 @@ class FMoE(nn.Module):
             moe_inp = tree.map_structure(delete_mask_func, moe_inp)
             gate_top_k_idx_1 = gate_top_k_idx_1[mask == 0, :]
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
-        self.current_expert_range = (0, 4)
+        self.current_expert_range = (0, 10)
         fwd_1 = _fmoe_general_global_forward(
             moe_inp_1,
             gate_top_k_idx_1,
@@ -359,7 +359,7 @@ class FMoE(nn.Module):
             self.world_size,
             experts=self.experts,
         )
-        self.current_expert_range = (4, 16)
+        self.current_expert_range = (10, 16)
         fwd_2 = _fmoe_expert_choice_general_global_forward(
             moe_inp_2,
             gate_top_k_idx_2,

@@ -95,8 +95,8 @@ def prepare_forward_expert_choice(gate, num_expert, world_size):
     # )
     pos = gate.contiguous().view(-1).clone()
     with torch.no_grad():
-        local_expert_count_first_part = torch.zeros((4,), dtype=int)
-        local_expert_count_second_part = torch.full((12,), num_token_per_expert, dtype=int)
+        local_expert_count_first_part = torch.zeros((10,), dtype=int)
+        local_expert_count_second_part = torch.full((6,), num_token_per_expert, dtype=int)
         local_expert_count = torch.cat([local_expert_count_first_part, local_expert_count_second_part]).contiguous()
         global_expert_count = local_expert_count.clone()
     with torch.no_grad():
