@@ -35,16 +35,17 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         valid_idx = gate_top_k_idx[gate_top_k_idx > -1].long()
         fraction_expert = (
             torch.scatter_add(
-                torch.zeros(12, device=valid_idx.device),
+                torch.zeros(14, device=valid_idx.device),
                 0,
                 valid_idx,
                 torch.ones_like(valid_idx, dtype=torch.float),
             )
             / valid_idx.numel()
         )
-        print(f'Balancing for expert cluster 1: {fraction_expert=}')
+        # print(f'Balancing for expert cluster 1: {fraction_expert=}')
+        # print(f'Balancing for expert cluster 1: {fraction_expert=}')
         prob_expert = score.sum(dim=0) / valid_idx.numel() * 2 # top2 
-        loss = (fraction_expert * prob_expert).sum() * 12
+        loss = (fraction_expert * prob_expert).sum() * 14
         # self.loss = loss
         return loss
     
@@ -54,8 +55,8 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_weight = torch.sigmoid(torch.matmul(inp, self.weight)).to(device)
         gate_weight1 = (gate_weight > 0.5).float()
         gate_weight2 = 1 - gate_weight1
-        
-        print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
+        # print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
+        # print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
         n = inp.shape[0]
         n_1 = gate_weight1.sum()
         n_2 = n - n_1
@@ -75,12 +76,12 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         # import ipdb; ipdb.set_trace()
         # Filter out gate weights
         gate = self.gate(inp) # [1024, 16]
-        gate_1 = gate[non_zero_idx_1][:, :12]
+        gate_1 = gate[non_zero_idx_1][:, :14]
 
         # configuration for expert choose token
         num_token, _ = inp_2.shape
-        expert_top_k = num_token * self.capacity // (4)
-        gate_2 = gate[non_zero_idx_2][:, 12:] # [n_2, 8]
+        expert_top_k = num_token * self.capacity // (2)
+        gate_2 = gate[non_zero_idx_2][:, 14:] # [n_2, 8]
         # gate_idx_exp = torch.arange(self.tot_expert // 2, self.tot_expert, dtype=torch.float32).unsqueeze(-1).to(device.type) # [8, 9, 10, ..., 15]
         
         if self.dense_moe_flag:
@@ -116,10 +117,10 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         if self.g_blance:
             self.loss = self.set_load_balance(gate_1, gate_top_k_idx_1)
             # print('self.loss = ', self.loss)
-            print(f'Balancing loss for layer 2: {self.loss=}\n')
+            # print(f'Balancing loss for layer 2: {self.loss=}\n')
             self.loss += (2 * n_2 / n + 2 * (n_1 - n_2) / n**2 * gate_weight.sum(dim=0).item()) # load balancing for the layer 1
             # print('after = ', self.loss)
-            print(f'Balancing loss for 2 layers: {self.loss=}\n')
+            # print(f'Balancing loss for 2 layers: {self.loss=}\n')
             # self.loss += (2 * n_1 / n * gate_weight.sum(dim=0) /n + 2 * n_2 / n * (gate_weight).sum(dim=0) /n)
         else:
             self.loss = None
