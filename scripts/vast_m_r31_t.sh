@@ -22,7 +22,7 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r31.pt \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r31_t.pt \
 "
 
 
