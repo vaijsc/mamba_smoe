@@ -38,7 +38,7 @@ def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):
                     # import ipdb; ipdb.set_trace()
                     if m.loss is not None:
                         balance_loss += m.loss
-            # import ipdb; ipdb.set_trace()
+            import ipdb; ipdb.set_trace()
             loss += load_balance * balance_loss # load balancing 
         (loss / loss_div).backward(retain_graph=True)
         # print('gradient = ', (loss/loss_div).grad)
