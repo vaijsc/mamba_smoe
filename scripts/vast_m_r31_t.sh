@@ -23,15 +23,14 @@ args="
 --nbatches 1000 \
 --distributed \
 --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r31.pt \
---wandb-flag \
---project-name hier_moe \
---job-name lb_smoe_m_r31 \
 "
 
 
 
-echo "Training ..."
-WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10020 --nproc_per_node=2 --use_env train_r31.py $args
+# echo "Training ..."
+# # WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
+# python -m torch.distributed.launch --master_port 10020 --nproc_per_node=2 --use_env train_r31.py $args
 
 echo "Evaluation ..."
-WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10020 --nproc_per_node=2 --use_env train_r31.py $args --resume --full-eval-mode
+# WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
+python -m torch.distributed.launch --master_port 10020 --nproc_per_node=2 --use_env train_r31_t.py $args --resume --full-eval-mode
