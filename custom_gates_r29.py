@@ -58,11 +58,11 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         # gate_weight1 = (gate_weight > 0.5).float()
         gate_weight2 = 1 - gate_weight1
         
-        gate_val = torch.randn(1024, 2)
+        # gate_val = torch.randn(1024, 2)
         # print(f"{gate_weight1.sum()=} \n{gate_weight2.sum()=}")
         # n = inp.shape[0]
-        n_1 = gate_weight1.sum()
-        n_2 = num_token - n_1
+        # n_1 = gate_weight1.sum()
+        # n_2 = num_token - n_1
         
         # gate_top_k_idx_weight = torch.cat([gate_weight1, gate_weight2], dim=-1) # [1024, 2]
         # gate_weights = torch.cat([gate_weight, 1 - gate_weight], dim=-1)
@@ -121,8 +121,8 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             self.loss = self.set_load_balance(gate_1, gate_top_k_idx_1)
             # print('self.loss = ', self.loss)
             # self.loss += (2 * n_2 / n + 2 * (n_1 - n_2) / n**2 * gate_weight.sum(dim=0).item()) # load balancing for the layer 1
-            gate_val = F.softmax(gate_val, dim=1)
-            self.loss += 2 * n_1 / num_token**2 * gate_val.sum(dim=0)[0] + 2 * n_2 / num_token**2 * gate_val.sum(dim=0)[1]
+            # gate_val = F.softmax(gate_val, dim=1)
+            # self.loss += 2 * n_1 / num_token**2 * gate_val.sum(dim=0)[0] + 2 * n_2 / num_token**2 * gate_val.sum(dim=0)[1]
             # print('after = ', self.loss)
             # self.loss += (2 * n_1 / n * gate_weight.sum(dim=0) /n + 2 * n_2 / n * (gate_weight).sum(dim=0) /n)
         else:

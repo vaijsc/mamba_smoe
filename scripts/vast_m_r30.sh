@@ -1,5 +1,5 @@
 export TORCH_USE_CUDA_DSA=1
-export CUDA_VISIBLE_DEVICES='0,1'
+export CUDA_VISIBLE_DEVICES='3,4'
 
 args="
 --data /home/anh/wikitext-103  \

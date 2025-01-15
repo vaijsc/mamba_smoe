@@ -26,7 +26,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.loss = None
         self.d_model = d_model
         # self.weight = nn.Linear(self.d_model, 1)
-        self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
+        # self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
         self.capacity = 2 # 0.5, 1
 
     def set_load_balance(self, gate, gate_top_k_idx):
@@ -42,7 +42,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             / valid_idx.numel()
         )
-        print(f'Balancing for expert cluster 1: {fraction_expert=}')
+        # print(f'Balancing for expert cluster 1: {fraction_expert=}')
         prob_expert = score.sum(dim=0) / valid_idx.numel() * 2 # top2 
         loss = (fraction_expert * prob_expert).sum() * (self.tot_expert / 2)
         # self.loss = loss
@@ -51,6 +51,8 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
     def forward(self, inp, return_all_scores=False):
         device = inp.device
         # gate_weight = torch.sigmoid(self.weight(inp)).to(device)
+        
+        """
         gate_weight = torch.sigmoid(torch.matmul(inp, self.weight)).to(device)
         gate_weight1 = (gate_weight > 0.5).float()
         gate_weight2 = 1 - gate_weight1
@@ -59,7 +61,11 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         n = inp.shape[0]
         n_1 = gate_weight1.sum()
         n_2 = n - n_1
-        
+        """
+        num_token, _ = inp.shape
+        gate_weight1 = torch.randint(0,2,(num_token, 1)).to(device)
+        gate_weight2 = 1 - gate_weight1
+
         # gate_top_k_idx_weight = torch.cat([gate_weight1, gate_weight2], dim=-1) # [1024, 2]
         # gate_weights = torch.cat([gate_weight, 1 - gate_weight], dim=-1)
         
@@ -114,9 +120,9 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         if self.g_blance:
             self.loss = self.set_load_balance(gate_1, gate_top_k_idx_1)
-            print(f'Balancing loss for layer 2: {self.loss=}\n')
-            self.loss += (2 * n_2 / n + 2 * (n_1 - n_2) / n**2 * gate_weight.sum(dim=0).item()) # load balancing for the layer 1
-            print(f'Balancing loss for 2 layers: {self.loss=}\n')
+            # print(f'Balancing loss for layer 2: {self.loss=}\n')
+            # self.loss += (2 * n_2 / n + 2 * (n_1 - n_2) / n**2 * gate_weight.sum(dim=0).item()) # load balancing for the layer 1
+            # print(f'Balancing loss for 2 layers: {self.loss=}\n')
             # self.loss += (2 * n_1 / n * gate_weight.sum(dim=0) /n + 2 * n_2 / n * (gate_weight).sum(dim=0) /n)
         else:
             self.loss = None
