@@ -4,8 +4,8 @@
 #SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r34.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
-#SBATCH --mem-per-gpu=50G
-#SBATCH --cpus-per-gpu=24
+#SBATCH --mem-per-gpu=24G
+#SBATCH --cpus-per-gpu=16
 #SBATCH --partition=research
 #SBATCH --mail-type=all
 #SBATCH --mail-user=v.AnhND81@vinai.io
