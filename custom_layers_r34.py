@@ -4,7 +4,7 @@ import math, random
 import torch
 import torch.nn as nn
 import tree
-from custom_functions_r34 import prepare_forward, ensure_comm
+from custom_functions_r34 import prepare_forward, prepare_forward_expert_choice ,ensure_comm
 from custom_functions_r34 import MOEScatter, MOEGather
 from custom_functions_r34 import AllGather, Slice
 from gates import NaiveGate
@@ -112,6 +112,86 @@ def _fmoe_general_global_forward(
     """
     return outp
 
+def _fmoe_expert_choice_general_global_forward(
+    inp, gate, expert_fn, num_expert, world_size, **kwargs
+):
+    r"""
+    A private function that performs the following steps to complete the MoE
+    computation.
+    * Count the number of tokens from each worker to each expert.
+    * Send the features to their target position so that input features to each
+    expert are contiguous in memory.
+    * Perform the forward computation of the experts using `expert_fn`
+    * Gather the output features of experts back, and reorder them as sentences.
+    Intermediate results like expert counts are hidden from users by this
+    function.
+    """
+    # print(f"gate in general global forward {gate.shape}")
+    # num_token = inp.shape[-2]
+    # print(f"{num_expert=}")
+    # print(f"{world_size=}")
+    # print(f"{expert_fn=}")
+    # print(f"{gate=}")
+    # token_counts = torch.bincount(gate.flatten())
+    # print(f"{max(token_counts)=}")
+    # print(f"{inp.shape=}")
+    # import ipdb; ipdb.set_trace()
+    (
+        pos,
+        local_expert_count,
+        global_expert_count,
+        fwd_expert_count,
+        fwd_batch_size,
+    ) = prepare_forward_expert_choice(gate, num_expert, world_size)
+    # tmp = pos[local_expert_count[7]:local_expert_count[8]]
+    # tmp = torch.sort(tmp)
+    # print(f"{tmp=} {pos.shape=} {max(pos)=}")
+    # print(f"{local_expert_count=} {local_expert_count.shape=} {local_expert_count.is_contiguous()=}")
+    # print(f"{global_expert_count=} {global_expert_count.shape=} {global_expert_count.is_contiguous()=}")
+    # print(f"{fwd_expert_count=} {fwd_expert_count.shape=} {fwd_expert_count.is_contiguous()=}")
+    # print(f"{fwd_batch_size=}")
+    # haha = gate[0]
+    # print(f"{haha=}")
+
+    def scatter_func(tensor):
+        return MOEScatter.apply(
+            tensor,
+            pos,
+            local_expert_count,
+            global_expert_count,
+            fwd_batch_size,
+            world_size,
+        )
+    x = tree.map_structure(scatter_func, inp)
+    # print(f"{x.shape=}")
+    # print(f"siuuuu {x=}")
+    # import ipdb ipdb.set_trace()
+    # x.shape torch.Size([16384, 128])
+    # fwd_expert_count torch.Size([16]) 
+    # tensor([1101, 1544, 1141,  725,  483, 1337,  787,  868, 1427, 1304, 1118,  904,
+    #    970,  896,  837,  942])
+    """
+        expert_fn
+        <bound method FMoE.expert_fn of CustomizedMoEPositionwiseFF(
+        (gate): CustomNaiveGate_Balance_SMoE(
+            (gate): Linear(in_features=128, out_features=16, bias=True)
+        )
+        (experts): _Expert(
+            (htoh4): FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
+            (h4toh): FMoELinear(num_expert=16, in_features=128, out_features=128, bias=True, rank=0)
+            (activation): Sequential(
+            (0): ReLU()
+            (1): Dropout(p=0.7, inplace=False)
+            )
+        )
+        (layer_norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        (dropout): Dropout(p=0.7, inplace=False)
+        )>
+    """
+    x = expert_fn(x, fwd_expert_count)
+
+    return x
+
 
 fmoe_faster_schedule = False
 if switch_from_env("FMOE_FASTER_SCHEDULE_ENABLE", False):
@@ -185,8 +265,9 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        self.weights = nn.Linear(2 * self.d_model, self.d_model)
-
+        # self.weights = nn.Linear(2 * self.d_model, self.d_model)
+        self.weights = nn.Parameter(torch.ones(1))
+        
     def expert_fn(self, inp, fwd_expert_count):
         r"""
         The default expert function which either calls the experts as a whole
@@ -254,6 +335,8 @@ class FMoE(nn.Module):
         torch.Size([2048, 128])
         
         """
+        
+        num_token, _ = moe_inp.shape
         moe_inp_batch_size = tree.flatten(
             tree.map_structure(lambda tensor: tensor.shape[0], moe_inp)
         ) 
@@ -290,7 +373,6 @@ class FMoE(nn.Module):
         ipdb> gate_score.shape
         torch.Size([2048, 2])
         """
-        gate_top_k_idx_2 = gate_top_k_idx_2 + 8
         if hasattr(self.gate, "dynamic_top_k"):
             self.top_k = self.gate.dynamic_top_k
 
@@ -321,7 +403,7 @@ class FMoE(nn.Module):
             experts=self.experts,
         )
         self.current_expert_range = (8, 16)
-        fwd_2 = _fmoe_general_global_forward(
+        fwd_2 = _fmoe_expert_choice_general_global_forward(
             moe_inp,
             gate_top_k_idx_2,
             self.expert_fn,
@@ -364,13 +446,14 @@ class FMoE(nn.Module):
                 return tensor
 
             moe_outp_1 = tree.map_structure(view_func, fwd_1)
-            moe_outp_2 = tree.map_structure(view_func, fwd_2)
+            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
+            moe_outp_2 = fwd_2
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
             """
         gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
-        gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
+        # gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
         """
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
@@ -380,15 +463,38 @@ class FMoE(nn.Module):
             dim = tensor.shape[-1]
             tensor = torch.bmm(gate_score, tensor).reshape(-1, dim)
             return tensor
-        """
-        moe_outp
-        ipdb> moe_outp.shape
-        torch.Size([2048, 2, 128])
-        """
+
+        def expert_combine_func(num_token, gate, gate_score, tensor):
+            """
+            num_token: Total number of tokens (n)
+            gate: Indices of tokens assigned to experts (shape [e, k])
+            gate_score: Gating weights (shape [e, k])
+            tensor: Expert outputs (shape [e, k, d])
+            Returns:
+            out: Combined output (shape [n, d])
+            """
+            # import ipdb; ipdb.set_trace()
+            d = tensor.shape[-1]
+            flat_I = gate.flatten()  # Shape [e*k]
+            flat_G = gate_score.flatten()  # Shape [e*k]
+            flat_tensor = tensor.view(-1, d)  # Shape [e*k, d]
+
+            # Initialize output tensor
+            out = torch.zeros((num_token, d), device=tensor.device)  # Shape [n, d]
+
+            # Use scatter_add with weighted tensor
+            weighted_tensor = flat_G.unsqueeze(-1) * flat_tensor  # Shape [e*k, d]
+            out = out.index_add_(0, flat_I, weighted_tensor)  # Scatter-add with index_add_
+
+            return out
+        
+        # import ipdb; ipdb.set_trace()
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
-        moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
-        moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
-        moe_outp = self.weights(moe_outp)
+        # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
+        moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
+        # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
+        # moe_outp = self.weights(moe_outp)
+        moe_outp = torch.sigmoid(self.weights) * moe_outp_1 + (1 - torch.sigmoid(self.weights)) * moe_outp_2
 
         if self.slice_size > 1:
 

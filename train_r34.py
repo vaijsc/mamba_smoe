@@ -8,10 +8,10 @@ import math, random
 import torch
 import time
 
-from config import PARAMS_CONFIG
+from config_1 import PARAMS_CONFIG
 from data import get_train_val_test_data
 from models_r34 import TransformerSeq
-from trainer import train_iteration, full_eval
+from trainer_r34 import train_iteration, full_eval
 import datetime
 import wandb
 import os
@@ -93,8 +93,8 @@ def launch(
 
     # create logger
     logger = Logger()
-    # folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
+    folder_path = '/home/anhnd81/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
     # folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
