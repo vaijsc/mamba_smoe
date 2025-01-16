@@ -25,7 +25,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.g_blance = g_blance
         self.loss = None
         self.d_model = d_model
-        self.weight = nn.Linear(self.d_model // 2, 1)
+        # self.weight = nn.Linear(self.d_model // 2, 1)
         # self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
         self.capacity = 2 # 0.5, 1
 
@@ -52,13 +52,13 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
     
     def forward(self, inp, return_all_scores=False):
 
-        inp_1 = inp[:, : self.d_model // 2]
-        inp_2 = inp[:, self.d_model // 2 : ]
+        inp_1 = inp[:, self.d_model // 2 :]
+        inp_2 = inp[:, : self.d_model // 2 ]
 
         gate_1 = self.gate(inp_1)
         gate_2 = self.gate(inp_2)
-        import ipdb; ipdb.set_trace()
-        gate_weight1 = torch.sigmoid(torch.matmul())
+        # import ipdb; ipdb.set_trace()
+        # gate_weight1 = torch.sigmoid(torch.matmul())
 
         num_token, _ = inp.shape
         expert_top_k = num_token * self.capacity // 16

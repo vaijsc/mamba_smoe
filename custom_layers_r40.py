@@ -498,7 +498,7 @@ class FMoE(nn.Module):
         # moe_outp = torch.sigmoid(self.weights) * moe_outp_1 + (1 - torch.sigmoid(self.weights)) * moe_outp_2
         # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
         # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
-        moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
+        moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
 
         if self.slice_size > 1:
 
