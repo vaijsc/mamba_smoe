@@ -143,15 +143,6 @@ def _fmoe_expert_choice_general_global_forward(
         fwd_expert_count,
         fwd_batch_size,
     ) = prepare_forward_expert_choice(gate, num_expert, world_size)
-    # tmp = pos[local_expert_count[7]:local_expert_count[8]]
-    # tmp = torch.sort(tmp)
-    # print(f"{tmp=} {pos.shape=} {max(pos)=}")
-    # print(f"{local_expert_count=} {local_expert_count.shape=} {local_expert_count.is_contiguous()=}")
-    # print(f"{global_expert_count=} {global_expert_count.shape=} {global_expert_count.is_contiguous()=}")
-    # print(f"{fwd_expert_count=} {fwd_expert_count.shape=} {fwd_expert_count.is_contiguous()=}")
-    # print(f"{fwd_batch_size=}")
-    # haha = gate[0]
-    # print(f"{haha=}")
 
     def scatter_func(tensor):
         return MOEScatter.apply(
@@ -367,7 +358,7 @@ class FMoE(nn.Module):
         torch.Size([2048, 128])
         """
         # import ipdb; ipdb.set_trace()
-        moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
+        moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, order = self.gate(moe_inp)
         """
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
@@ -493,12 +484,13 @@ class FMoE(nn.Module):
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
         # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
         moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
-        # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
-        # moe_outp = self.weights(moe_outp)
-        # moe_outp = torch.sigmoid(self.weights) * moe_outp_1 + (1 - torch.sigmoid(self.weights)) * moe_outp_2
-        # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
-        # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
-        moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
+        
+        # Concatenate based on order efficiently
+        moe_outp = torch.cat([
+            torch.where(order, moe_outp_1, moe_outp_2),
+            torch.where(order, moe_outp_2, moe_outp_1)
+        ], dim=-1)  # Shape: [1024, 128]
+        # moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
 
         if self.slice_size > 1:
 
