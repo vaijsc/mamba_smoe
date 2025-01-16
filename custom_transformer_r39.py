@@ -19,7 +19,7 @@ class _Expert(nn.Module):
         self.htoh4 = FMoELinear(num_expert, d_model // 2, 2 * d_hidden, bias=True, rank=rank)
         self.h4toh = FMoELinear(num_expert, 2 * d_hidden, d_model //2 , bias=True, rank=rank)
         self.activation = activation
-        self.expert_mask = None
+        # self.expert_mask = None
 
     # def set_expert_mask(self, mask):
     #     """Set mask for active/inactive experts"""
