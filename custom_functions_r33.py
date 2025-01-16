@@ -66,7 +66,7 @@ def prepare_forward(gate, num_expert, world_size):
         # print("shape:", global_expert_count.shape)
         # print("value:", global_expert_count)
         # print('value after view: ', global_expert_count.view(world_size, num_expert).sum(dim=0))
-        fwd_expert_count = global_expert_count.view(world_size, num_expert).sum(dim=0)
+        fwd_expert_count = global_expert_count.reshape(world_size, num_expert).sum(dim=0)
         fwd_batch_size = int(fwd_expert_count.sum().item())
     return (
         pos,
