@@ -4,9 +4,9 @@ import math, random
 import torch
 import torch.nn as nn
 import tree
-from custom_functions_r38 import prepare_forward, prepare_forward_expert_choice ,ensure_comm
-from custom_functions_r38 import MOEScatter, MOEGather
-from custom_functions_r38 import AllGather, Slice
+from custom_functions_r39 import prepare_forward, prepare_forward_expert_choice ,ensure_comm
+from custom_functions_r39 import MOEScatter, MOEGather
+from custom_functions_r39 import AllGather, Slice
 from gates import NaiveGate
 import torch.nn.functional as F
 from fastermoe.config import switch_from_env
@@ -266,7 +266,7 @@ class FMoE(nn.Module):
         self.mask_dict = mask_dict
         self.moe_group = moe_group
         # self.weights = nn.Linear(2 * self.d_model, self.d_model)
-        self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
+        # self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
         # self.weights = nn.Linear(self.d_model, 1)
         
     def expert_fn(self, inp, fwd_expert_count):
@@ -277,22 +277,22 @@ class FMoE(nn.Module):
         # import ipdb; ipdb.set_trace()
         if self.experts_fused:
             # Get the expert range
-            start_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[0]
-            end_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[1]
+            # start_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[0]
+            # end_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[1]
             
             # Adjust fwd_expert_count based on the current range
-            adjusted_count = torch.zeros_like(fwd_expert_count)
+            # adjusted_count = torch.zeros_like(fwd_expert_count)
             # adjusted_count[:(end_idx - start_idx)] = fwd_expert_count[start_idx:end_idx]
             
-            adjusted_count[start_idx: end_idx] = fwd_expert_count[start_idx: end_idx]
+            # adjusted_count[start_idx: end_idx] = fwd_expert_count[start_idx: end_idx]
             # Create expert mask
-            expert_mask = torch.zeros_like(fwd_expert_count)
-            expert_mask[start_idx: end_idx] = 1.0
+            # expert_mask = torch.zeros_like(fwd_expert_count)
+            # expert_mask[start_idx: end_idx] = 1.0
             
             # Set the expert mask
-            self.experts.set_expert_mask(expert_mask)
+            # self.experts.set_expert_mask(expert_mask)
             
-            return self.experts(inp, adjusted_count)
+            return self.experts(inp, fwd_expert_count)
                 
         if isinstance(fwd_expert_count, torch.Tensor):
             fwd_expert_count = fwd_expert_count.cpu().numpy()
@@ -367,7 +367,7 @@ class FMoE(nn.Module):
         torch.Size([2048, 128])
         """
         # import ipdb; ipdb.set_trace()
-        gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
+        moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
         """
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
@@ -394,18 +394,18 @@ class FMoE(nn.Module):
             gate_top_k_idx_1 = gate_top_k_idx_1[mask == 0, :]
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
             
-        self.current_expert_range = (0, 8)
+        # self.current_expert_range = (0, 8)
         fwd_1 = _fmoe_general_global_forward(
-            moe_inp,
+            moe_inp_1,
             gate_top_k_idx_1,
             self.expert_fn,
             self.num_expert,
             self.world_size,
             experts=self.experts,
         )
-        self.current_expert_range = (8, 16)
+        # self.current_expert_range = (8, 16)
         fwd_2 = _fmoe_expert_choice_general_global_forward(
-            moe_inp,
+            moe_inp_2,
             gate_top_k_idx_2,
             self.expert_fn,
             self.num_expert,
@@ -496,8 +496,9 @@ class FMoE(nn.Module):
         # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
         # moe_outp = self.weights(moe_outp)
         # moe_outp = torch.sigmoid(self.weights) * moe_outp_1 + (1 - torch.sigmoid(self.weights)) * moe_outp_2
-        g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
-        moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
+        # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
+        # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
+        moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
 
         if self.slice_size > 1:
 

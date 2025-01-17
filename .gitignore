@@ -9,3 +9,4 @@ moe.txt
 gates/__pycache__
 fastmoe/__pycache__
 ckpt/
+logs/
