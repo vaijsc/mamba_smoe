@@ -3,8 +3,8 @@ import argparse
 import math, random
 import torch
 import torch.nn as nn
-from custom_layers_mhmoe import FMoE
-from custom_layers_mhmoe import FMoELinear
+from custom_layers_r50 import FMoE
+from custom_layers_r50 import FMoELinear
 from custom_layers_opt import FMoEOpt
 
 
@@ -16,8 +16,8 @@ class _Expert(nn.Module):
 
     def __init__(self, num_expert, d_model, d_hidden, activation, rank=0):
         super().__init__()
-        self.htoh4 = FMoELinear(num_expert, d_model // 2, 4 * d_hidden, bias=False, rank=rank)
-        self.h4toh = FMoELinear(num_expert, 4 * d_hidden, d_model //2 , bias=False, rank=rank)
+        self.htoh4 = FMoELinear(num_expert, d_model // 2, 3 * d_hidden, bias=False, rank=rank)
+        self.h4toh = FMoELinear(num_expert, 3 * d_hidden, d_model //2 , bias=False, rank=rank)
         self.activation = activation
         # self.expert_mask = None
 
@@ -31,12 +31,6 @@ class _Expert(nn.Module):
         First expand input to 4h (the hidden size is variable, but is called h4
         for convenience). Then perform activation. Finally shrink back to h.
         """
-        # if self.expert_mask is not None:
-        #     # Apply expert mask to the expert counts
-        #     masked_count = fwd_expert_count * self.expert_mask
-        # else:
-        #     masked_count = fwd_expert_count
-
         x = self.htoh4(inp, fwd_expert_count)
         x = self.activation(x)
         x = self.h4toh(x, fwd_expert_count)
