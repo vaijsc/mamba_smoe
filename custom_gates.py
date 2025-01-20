@@ -19,7 +19,7 @@ __all__ = [
 class CustomNaiveGate_Balance_SMoE(BaseGate):
     def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=True):
         super().__init__(num_expert, world_size)
-        self.gate = nn.Linear(d_model, self.tot_expert)
+        self.gate = nn.Linear(d_model, self.tot_expert, bias=False)
         self.top_k = top_k
         self.dense_moe_flag = False
         self.g_blance = g_blance
