@@ -28,6 +28,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         # self.weight = nn.Linear(self.d_model // 2, 1)
         self.weight = nn.Parameter(torch.ones([self.d_model // 2, 1]))
         self.capacity = 2 # 0.5, 1
+        self.weight_in = nn.Parameter(torch.ones([self.d_model, self.d_model]))
 
     def set_load_balance(self, gate, gate_top_k_idx):
         # import ipdb; ipdb.set_trace()
@@ -54,6 +55,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         # import ipdb; ipdb.set_trace()
         
         # gate_weight = torch.sigmoid(torch.matmul(inp, self.weight)).to(inp.device)
+        inp = torch.matmul(inp, self.weight_in)
         
         inp_1 = inp[:, : self.d_model // 2]
         inp_2 = inp[:, self.d_model // 2 :]

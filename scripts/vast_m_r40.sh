@@ -1,5 +1,5 @@
 export TORCH_USE_CUDA_DSA=1
-export CUDA_VISIBLE_DEVICES='0,1'
+export CUDA_VISIBLE_DEVICES='3,4'
 
 args="
 --data /home/anh/wikitext-103  \
@@ -22,10 +22,10 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r40.pt \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r40_t.pt \
 --wandb-flag \
 --project-name hier_moe \
---job-name lb_smoe_m_r40 \
+--job-name lb_smoe_m_r40_t \
 "
 
 

@@ -1,5 +1,6 @@
 export TORCH_USE_CUDA_DSA=1
-export CUDA_VISIBLE_DEVICES='3,4'
+export CUDA_VISIBLE_DEVICES='2,5'
+
 args="
 --data /home/anh/wikitext-103  \
 --base_arch transformer \
@@ -21,14 +22,16 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/4d_lb_smoe_m.pt \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_mhmoe.pt \
 --wandb-flag \
 --project-name hier_moe \
---job-name lb_smoe_m_4d \
+--job-name lb_smoe_m_mhmoe \
 "
- 
+
+
+
 echo "Training ..."
-WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train.py $args
+WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10026 --nproc_per_node=2 --use_env train_mhmoe.py $args
 
 echo "Evaluation ..."
-WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train.py $args --resume --full-eval-mode
+WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10026 --nproc_per_node=2 --use_env train_mhmoe.py $args --resume --full-eval-mode
