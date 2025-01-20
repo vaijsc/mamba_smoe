@@ -6,7 +6,7 @@
 #SBATCH --gpus-per-node=2
 #SBATCH --mem-per-gpu=24G
 #SBATCH --cpus-per-gpu=12
-#SBATCH --partition=research
+#SBATCH --partition=applied
 #SBATCH --mail-type=all
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
