@@ -1,7 +1,7 @@
 export TORCH_USE_CUDA_DSA=1
 export CUDA_VISIBLE_DEVICES='0,1'
 args="
---data /home/anh/wikitext-103  \
+--data /home/datasets/wikitext-103  \
 --base_arch transformer \
 --architecture sgsgsgsgsgsg \
 --gate_name smoe \
@@ -23,8 +23,8 @@ args="
 --distributed \
 --wandb-flag \
 --project-name hier_moe \
---job-name lb_smoe_m_4d \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/4d_lb_smoe_m.pt \ 
+--job-name lb_smoe_m_1 \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt 
 "
 
 

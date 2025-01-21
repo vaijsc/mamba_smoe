@@ -25,10 +25,8 @@ args="
 --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r44_1.pt \
 --wandb-flag \
 --project-name hier_moe \
---job-name lb_smoe_m_r44_1 \
+--job-name lb_smoe_m_r44_1 
 "
-
-
 
 echo "Training ..."
 WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10028 --nproc_per_node=2 --use_env train_r44_1.py $args
