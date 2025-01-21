@@ -72,7 +72,7 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)
@@ -95,9 +95,9 @@ def launch(
     # create logger
     logger = Logger()
     # folder_path = '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/logging.txt'
-    folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
+    # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
-    # folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
+    folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
     ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
@@ -116,15 +116,15 @@ def launch(
         f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
     # # resume training from last checkpoint if exists
-    iter_init = load_checkpoint(
-        trainer_params["checkpoint_path"],
-        model,
-        optimizer,
-        scheduler,
-        logger,
-        distributed,
-        resume,
-    )
+    # iter_init = load_checkpoint(
+    #     trainer_params["checkpoint_path"],
+    #     model,
+    #     optimizer,
+    #     scheduler,
+    #     logger,
+    #     distributed,
+    #     resume,
+    # )
     # # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)

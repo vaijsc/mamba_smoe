@@ -51,8 +51,8 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
     
     def forward(self, inp, return_all_scores=False):
 
-        inp_1 = inp[:, : self.d_model // 2]
-        inp_2 = inp[:, self.d_model // 2 : ]
+        inp_1 = inp[:, self.d_model // 2 :]
+        inp_2 = inp[:, : self.d_model // 2 ]
 
         gate_1 = self.gate(inp_1)
         gate_2 = self.gate(inp_2)

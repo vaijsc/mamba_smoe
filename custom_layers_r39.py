@@ -266,7 +266,7 @@ class FMoE(nn.Module):
         self.mask_dict = mask_dict
         self.moe_group = moe_group
         # self.weights = nn.Linear(2 * self.d_model, self.d_model)
-        # self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
+        self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
         # self.weights = nn.Linear(self.d_model, 1)
         
     def expert_fn(self, inp, fwd_expert_count):
@@ -498,8 +498,8 @@ class FMoE(nn.Module):
         # moe_outp = torch.sigmoid(self.weights) * moe_outp_1 + (1 - torch.sigmoid(self.weights)) * moe_outp_2
         # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
         # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
-        moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
-
+        moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
+        moe_outp = torch.mat(moe_outp, self.weight_out)
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
