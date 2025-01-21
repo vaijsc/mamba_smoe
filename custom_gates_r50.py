@@ -26,6 +26,8 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         self.loss = None
         self.d_model = d_model
         self.h = 2 
+        self.weight_control = nn.Parameter(torch.ones([d_model // 2, 1]))
+        self.capacity = 2
 
     def set_load_balance(self, gate, gate_top_k_idx):
         # import ipdb; ipdb.set_trace()
@@ -49,17 +51,24 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
     
     def forward(self, inp, return_all_scores=False):
 
-        # import ipdb; ipdb.set_trace()
-
+        import ipdb; ipdb.set_trace()
         num_token, embed_dim = inp.shape
         num_heads = self.h
         # inp_1 = inp[:, : self.d_model // 2]
         # inp_2 = inp[:, self.d_model // 2 : ]
         inp_heads = inp.reshape(num_token, num_heads, embed_dim // num_heads).reshape(num_token * num_heads, embed_dim // num_heads) 
-        gate = self.gate(inp_heads)
-        
+        weight1 = (torch.matmul(inp_heads, self.weight_control) > 0).to(float)
+        weight2 = 1 - weight1
+        non_zero_idx_1 = weight1.sum(dim=-1) != 0  # Rows with non-zero gate_weight1
+        non_zero_idx_2 = weight2.sum(dim=-1) != 0  # Rows with non-zero gate_weight2
+
+        inp_token_choice = inp_heads[non_zero_idx_1]
+        inp_expert_choice = inp_heads[non_zero_idx_2]
+
+        gate_token_choice = self.gate(inp_token_choice)
+        gate_expert_choice = self.gate(inp_expert_choice)
         # num_token, _ = inp.shape
-        # expert_top_k = num_token * self.capacity // 16
+        expert_top_k = num_token * self.capacity // 16
         if self.dense_moe_flag:
             gate = torch.ones_like(gate)  # average the importance of all experts
             gate_top_k_val, gate_top_k_idx = torch.topk(
@@ -67,27 +76,28 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             gate_top_k_val = gate_top_k_val.view(-1, self.tot_expert)
         else:
-            gate_top_k_val, gate_top_k_idx = torch.topk(
-                gate, k=self.top_k, dim=-1, largest=True, sorted=False
+            gate_top_k_val_1, gate_top_k_idx_1 = torch.topk(
+                gate_token_choice, k=self.top_k, dim=-1, largest=True, sorted=False
             )  # [.. x top_k] 
             
-            # gate_top_k_val_2, gate_top_k_idx_2 = torch.topk(
-            #     gate_2, k=self.top_k, dim=-1, largest=True, sorted=False
-            # )  # [.. x top_k] 
-            gate_top_k_val = gate_top_k_val.view(-1, self.top_k)  # (BxL) x 1 x top_k
-            # gate_top_k_val_2 = gate_top_k_val_2.view(-1, self.top_k)  # (BxL) x 1 x top_k
-        gate_score = F.softmax(gate_top_k_val, dim=-1)
-        # gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
+            gate_top_k_val_2, gate_top_k_idx_2 = torch.topk(
+                torch.transpose(gate_expert_choice, 0,1), k=expert_top_k, dim=-1, largest=True, sorted=False
+            )  # [.. x top_k] 
+            gate_top_k_val_1 = gate_top_k_val_1.view(-1, self.top_k)  # (BxL) x 1 x top_k
+            gate_top_k_val_2 = gate_top_k_val_2.view(-1, expert_top_k)  # (BxL) x 1 x top_k
+        gate_score_1 = F.softmax(gate_top_k_val_1, dim=-1)
+        gate_score_2 = F.softmax(gate_top_k_val_2, dim=-1)
         # import ipdb; ipdb.set_trace()
         if self.g_blance:
-            self.loss = self.set_load_balance(gate, gate_top_k_idx)
+            self.loss = self.set_load_balance(gate_token_choice, gate_top_k_idx_1)
             # self.loss += self.set_load_balance(gate_2, gate_top_k_idx_2)
+            # self.loss += self.set_load_balance(gate_)
             #self.set_load_balance(gate, gate_top_k_idx_2)
 
         if return_all_scores:
-            return gate_top_k_idx, gate_score, gate
+            return gate_top_k_idx, gate_score_1, gate
         ### modify
-        return inp_heads, gate_top_k_idx, gate_score
+        return inp_token_choice, inp_expert_choice, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, non_zero_idx_1, non_zero_idx_2
 
 class CustomNaiveGate_Balance_XMoE(BaseGate):
     def __init__(self, d_model, num_expert, world_size, top_k=2, g_balance=False):
