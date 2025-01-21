@@ -4,9 +4,9 @@ import math, random
 import torch
 import torch.nn as nn
 import tree
-from custom_functions_mhmoe import prepare_forward, prepare_forward_expert_choice ,ensure_comm
-from custom_functions_mhmoe import MOEScatter, MOEGather
-from custom_functions_mhmoe import AllGather, Slice
+from custom_functions_mhmoe_mr import prepare_forward, prepare_forward_expert_choice ,ensure_comm
+from custom_functions_mhmoe_mr import MOEScatter, MOEGather
+from custom_functions_mhmoe_mr import AllGather, Slice
 from gates import NaiveGate
 import torch.nn.functional as F
 from fastermoe.config import switch_from_env
@@ -126,16 +126,6 @@ def _fmoe_expert_choice_general_global_forward(
     Intermediate results like expert counts are hidden from users by this
     function.
     """
-    # print(f"gate in general global forward {gate.shape}")
-    # num_token = inp.shape[-2]
-    # print(f"{num_expert=}")
-    # print(f"{world_size=}")
-    # print(f"{expert_fn=}")
-    # print(f"{gate=}")
-    # token_counts = torch.bincount(gate.flatten())
-    # print(f"{max(token_counts)=}")
-    # print(f"{inp.shape=}")
-    # import ipdb; ipdb.set_trace()
     (
         pos,
         local_expert_count,
@@ -143,15 +133,6 @@ def _fmoe_expert_choice_general_global_forward(
         fwd_expert_count,
         fwd_batch_size,
     ) = prepare_forward_expert_choice(gate, num_expert, world_size)
-    # tmp = pos[local_expert_count[7]:local_expert_count[8]]
-    # tmp = torch.sort(tmp)
-    # print(f"{tmp=} {pos.shape=} {max(pos)=}")
-    # print(f"{local_expert_count=} {local_expert_count.shape=} {local_expert_count.is_contiguous()=}")
-    # print(f"{global_expert_count=} {global_expert_count.shape=} {global_expert_count.is_contiguous()=}")
-    # print(f"{fwd_expert_count=} {fwd_expert_count.shape=} {fwd_expert_count.is_contiguous()=}")
-    # print(f"{fwd_batch_size=}")
-    # haha = gate[0]
-    # print(f"{haha=}")
 
     def scatter_func(tensor):
         return MOEScatter.apply(
@@ -385,7 +366,7 @@ class FMoE(nn.Module):
             experts=self.experts,
         )
         # self.current_expert_range = (8, 16)
-        fwd_2 = _fmoe_general_global_forward(
+        fwd_2 = _fmoe_expert_choice_general_global_forward(
             moe_inp_2,
             gate_top_k_idx_2,
             self.expert_fn,
@@ -428,14 +409,14 @@ class FMoE(nn.Module):
                 return tensor
 
             moe_outp_1 = tree.map_structure(view_func, fwd_1)
-            moe_outp_2 = tree.map_structure(view_func, fwd_2)
-            # moe_outp_2 = fwd_2
+            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
+            moe_outp_2 = fwd_2
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
             """
         gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
-        gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
+        # gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
         """
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
@@ -472,8 +453,8 @@ class FMoE(nn.Module):
         
         # import ipdb; ipdb.set_trace()
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
-        moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
-        # moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
+        # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
+        moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
         moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
         moe_outp = torch.matmul(moe_outp, self.weight_out)
         if self.slice_size > 1:

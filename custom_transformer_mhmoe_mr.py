@@ -3,8 +3,8 @@ import argparse
 import math, random
 import torch
 import torch.nn as nn
-from custom_layers_mhmoe import FMoE
-from custom_layers_mhmoe import FMoELinear
+from custom_layers_mhmoe_mr import FMoE
+from custom_layers_mhmoe_mr import FMoELinear
 from custom_layers_opt import FMoEOpt
 
 

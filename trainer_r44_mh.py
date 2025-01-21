@@ -4,7 +4,7 @@ import math, random
 import torch
 import tqdm
 
-from custom_gates_r39 import *
+from custom_gates_r44_mh import *
 
 
 def _train_step(model, load_balance, X, Y, h_cache, eval_only, loss_div=1):

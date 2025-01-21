@@ -276,7 +276,7 @@ class FMoE(nn.Module):
         or as separate experts.
         """
         # import ipdb; ipdb.set_trace()
-        if self.experts_fused:            
+        if self.experts_fused:
             return self.experts(inp, fwd_expert_count)
                 
         if isinstance(fwd_expert_count, torch.Tensor):
@@ -346,9 +346,15 @@ class FMoE(nn.Module):
 
             moe_inp = tree.map_structure(slice_func, moe_inp)
         
+        # import ipdb; ipdb.set_trace()
+        """
+        ipdb> moe_inp.shape
+        torch.Size([2048, 128])
+        """
         moe_inp = torch.matmul(moe_inp, self.weight_in)
         # import ipdb; ipdb.set_trace()
-        moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
+        # moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
+        inp_heads, gate_top_k_idx, gate_score = self.gate(moe_inp)
         """
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
@@ -359,8 +365,8 @@ class FMoE(nn.Module):
             self.top_k = self.gate.dynamic_top_k
 
         if self.gate_hook is not None:
-            self.gate_hook(gate_top_k_idx_1, gate_score_1, None)
-            self.gate_hook(gate_top_k_idx_2, gate_score_2, None)
+            self.gate_hook(gate_top_k_idx_1, gate_score, None)
+            # self.gate_hook(gate_top_k_idx_2, gate_score_2, None)
 
         # delete masked tensors
         if self.mask is not None and self.mask_dict is not None:
@@ -376,18 +382,9 @@ class FMoE(nn.Module):
             gate_top_k_idx_2 = gate_top_k_idx_2[mask == 0, :]
             
         # self.current_expert_range = (0, 8)
-        fwd_1 = _fmoe_general_global_forward(
-            moe_inp_1,
-            gate_top_k_idx_1,
-            self.expert_fn,
-            self.num_expert,
-            self.world_size,
-            experts=self.experts,
-        )
-        # self.current_expert_range = (8, 16)
-        fwd_2 = _fmoe_general_global_forward(
-            moe_inp_2,
-            gate_top_k_idx_2,
+        fwd = _fmoe_general_global_forward(
+            inp_heads,
+            gate_top_k_idx,
             self.expert_fn,
             self.num_expert,
             self.world_size,
@@ -418,8 +415,8 @@ class FMoE(nn.Module):
             ipdb> moe_outp.shape
             torch.Size([2048, 2, 128])
             """
-            moe_outp_1 = tree.map_structure(recover_func, fwd_1)
-            moe_outp_2 = tree.map_structure(recover_func, fwd_2)
+            moe_outp = tree.map_structure(recover_func, fwd)
+            # moe_outp_2 = tree.map_structure(recover_func, fwd_2)
         else:
             
             def view_func(tensor):
@@ -427,15 +424,15 @@ class FMoE(nn.Module):
                 tensor = tensor.view(-1, self.top_k, dim)
                 return tensor
 
-            moe_outp_1 = tree.map_structure(view_func, fwd_1)
-            moe_outp_2 = tree.map_structure(view_func, fwd_2)
-            # moe_outp_2 = fwd_2
+            moe_outp = tree.map_structure(view_func, fwd)
+            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
+            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
             """
-        gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
-        gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
+        gate_score = gate_score.view(-1, 1, self.top_k)
+        # gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
         """
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
@@ -471,10 +468,10 @@ class FMoE(nn.Module):
             return out
         
         # import ipdb; ipdb.set_trace()
-        moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
-        moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
-        # moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
-        moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
+        moe_outp = tree.map_structure(bmm_func, gate_score, moe_outp)
+        # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
+        # moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
+        moe_outp = moe_outp.reshape(num_token, moe_outp.size(0) // num_token, moe_outp.size(1)).reshape(num_token, -1)
         moe_outp = torch.matmul(moe_outp, self.weight_out)
         if self.slice_size > 1:
 

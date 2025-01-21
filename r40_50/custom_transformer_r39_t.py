@@ -3,8 +3,8 @@ import argparse
 import math, random
 import torch
 import torch.nn as nn
-from custom_layers_mhmoe import FMoE
-from custom_layers_mhmoe import FMoELinear
+from custom_layers_r39_t import FMoE
+from custom_layers_r39_t import FMoELinear
 from custom_layers_opt import FMoEOpt
 
 
@@ -16,8 +16,8 @@ class _Expert(nn.Module):
 
     def __init__(self, num_expert, d_model, d_hidden, activation, rank=0):
         super().__init__()
-        self.htoh4 = FMoELinear(num_expert, d_model // 2, 2 * d_hidden, bias=True, rank=rank)
-        self.h4toh = FMoELinear(num_expert, 2 * d_hidden, d_model //2 , bias=True, rank=rank)
+        self.htoh4 = FMoELinear(num_expert, d_model // 2, d_hidden, bias=True, rank=rank)
+        self.h4toh = FMoELinear(num_expert, d_hidden, d_model //2 , bias=True, rank=rank)
         self.activation = activation
         # self.expert_mask = None
 

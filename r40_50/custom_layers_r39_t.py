@@ -266,7 +266,7 @@ class FMoE(nn.Module):
         self.mask_dict = mask_dict
         self.moe_group = moe_group
         # self.weights = nn.Linear(2 * self.d_model, self.d_model)
-        self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
+        # self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
         # self.weights = nn.Linear(self.d_model, 1)
         
     def expert_fn(self, inp, fwd_expert_count):
@@ -404,7 +404,7 @@ class FMoE(nn.Module):
             experts=self.experts,
         )
         # self.current_expert_range = (8, 16)
-        fwd_2 = _fmoe_expert_choice_general_global_forward(
+        fwd_2 = _fmoe_general_global_forward(
             moe_inp_2,
             gate_top_k_idx_2,
             self.expert_fn,
@@ -447,14 +447,14 @@ class FMoE(nn.Module):
                 return tensor
 
             moe_outp_1 = tree.map_structure(view_func, fwd_1)
-            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
-            moe_outp_2 = fwd_2
+            moe_outp_2 = tree.map_structure(view_func, fwd_2)
+            # moe_outp_2 = fwd_2
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
             """
         gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
-        # gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
+        gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
         """
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
@@ -491,15 +491,10 @@ class FMoE(nn.Module):
         
         # import ipdb; ipdb.set_trace()
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
-        # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
-        moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
-        # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
-        # moe_outp = self.weights(moe_outp)
-        # moe_outp = torch.sigmoid(self.weights) * moe_outp_1 + (1 - torch.sigmoid(self.weights)) * moe_outp_2
-        # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
-        # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
+        moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
+        # moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
         moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
-        moe_outp = torch.matmul(moe_outp, self.weight_out)
+        # moe_outp = torch.matmul(moe_outp, self.weight_out)
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
