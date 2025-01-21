@@ -499,7 +499,7 @@ class FMoE(nn.Module):
         # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
         # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
         moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
-        moe_outp = torch.mat(moe_outp, self.weight_out)
+        moe_outp = torch.matmul(moe_outp, self.weight_out)
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
