@@ -22,9 +22,9 @@ args="
 --batch-split 4 \
 --nbatches 1000 \
 --distributed \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m.pt \
 --full-eval-mode \
 --resume \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m.pt \
 "
 
 # --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt \

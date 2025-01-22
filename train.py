@@ -72,7 +72,7 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    # PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt"
+    # PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m.pt"
     # checkpoint = torch.load(PATH)
     # from collections import OrderedDict
     # state_dict = dict(checkpoint['model'])
