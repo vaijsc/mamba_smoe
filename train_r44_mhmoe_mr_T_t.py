@@ -10,8 +10,8 @@ import time
 
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_mhmoe import TransformerSeq
-from trainer_mhmoe import train_iteration, full_eval
+from models_r44_mhmoe_mr_T import TransformerSeq
+from trainer_r44_mhmoe_mr_T import train_iteration, full_eval
 import datetime
 import wandb
 import os
@@ -72,8 +72,7 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    # import ipdb; ipdb.set_trace()
-    PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_mhmoe.pt"
+    PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r44_mhmoe_mr_T.pt"
     checkpoint = torch.load(PATH)
     from collections import OrderedDict
     state_dict = dict(checkpoint['model'])
@@ -84,6 +83,7 @@ def launch(
             del state_dict[key]
     state_dict = OrderedDict(state_dict)
     model.load_state_dict(state_dict)
+    # import ipdb; ipdb.set_trace()
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)
@@ -127,15 +127,15 @@ def launch(
         f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
     # # resume training from last checkpoint if exists
-    # iter_init = load_checkpoint(
-    #     trainer_params["checkpoint_path"],
-    #     model,
-    #     optimizer,
-    #     scheduler,
-    #     logger,
-    #     distributed,
-    #     resume,
-    # )
+    iter_init = load_checkpoint(
+        trainer_params["checkpoint_path"],
+        model,
+        optimizer,
+        scheduler,
+        logger,
+        distributed,
+        resume,
+    )
     # # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)
