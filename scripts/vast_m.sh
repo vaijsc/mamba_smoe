@@ -1,5 +1,5 @@
 export TORCH_USE_CUDA_DSA=1
-export CUDA_VISIBLE_DEVICES='6,7'
+export CUDA_VISIBLE_DEVICES='5'
 
 args="
 --data /home/datasets/wikitext-103 \
@@ -37,4 +37,4 @@ args="
 
 echo "Evaluation ..."
 # WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
-python -m torch.distributed.launch --master_port 10017 --nproc_per_node=2 --use_env train.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10017 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode
