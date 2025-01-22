@@ -19,7 +19,7 @@ args="
 --lr-warmup 4000 \
 --niter 80 \
 --batch-sz 48 \
---batch-split 2 \
+--batch-split 4 \
 --nbatches 1000 \
 --distributed \
 --full-eval-mode \
