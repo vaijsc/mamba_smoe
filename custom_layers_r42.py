@@ -265,7 +265,11 @@ class FMoE(nn.Module):
         self.mask = mask
         self.mask_dict = mask_dict
         self.moe_group = moe_group
-        self.weights = nn.Linear(self.d_model, self.d_model)
+        
+        # self.weights = nn.Linear(self.d_model, self.d_model)
+        # self.weight_in = nn.Parameter(torch.ones([self.d_model, self.d_model]))
+        self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
+
         # self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
         # self.weights = nn.Linear(self.d_model, 1)
         
@@ -276,22 +280,6 @@ class FMoE(nn.Module):
         """
         # import ipdb; ipdb.set_trace()
         if self.experts_fused:
-            # Get the expert range
-            # start_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[0]
-            # end_idx = getattr(self, 'current_expert_range', (0, self.num_expert))[1]
-            
-            # Adjust fwd_expert_count based on the current range
-            # adjusted_count = torch.zeros_like(fwd_expert_count)
-            # adjusted_count[:(end_idx - start_idx)] = fwd_expert_count[start_idx:end_idx]
-            
-            # adjusted_count[start_idx: end_idx] = fwd_expert_count[start_idx: end_idx]
-            # Create expert mask
-            # expert_mask = torch.zeros_like(fwd_expert_count)
-            # expert_mask[start_idx: end_idx] = 1.0
-            
-            # Set the expert mask
-            # self.experts.set_expert_mask(expert_mask)
-            
             return self.experts(inp, fwd_expert_count)
                 
         if isinstance(fwd_expert_count, torch.Tensor):
@@ -366,6 +354,7 @@ class FMoE(nn.Module):
         ipdb> moe_inp.shape
         torch.Size([2048, 128])
         """
+        # moe_inp = torch.matmul(moe_inp, self.weight_in)
         # import ipdb; ipdb.set_trace()
         moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
         """
@@ -499,7 +488,8 @@ class FMoE(nn.Module):
         # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
         # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
         moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
-        moe_outp = self.weights(moe_outp)
+        # moe_outp = self.weights(moe_outp)
+        moe_outp = torch.matmul(moe_outp, self.weight_out)
         if self.slice_size > 1:
 
             def all_gather_func(tensor):
