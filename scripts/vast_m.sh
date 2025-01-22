@@ -22,6 +22,8 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
+--full-eval-mode \
+--resume \
 "
 
 # --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt \

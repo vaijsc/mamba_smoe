@@ -72,17 +72,17 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt"
-    checkpoint = torch.load(PATH)
-    from collections import OrderedDict
-    state_dict = dict(checkpoint['model'])
-    keys = list(state_dict.keys())
-    for key in keys:
-        if key.startswith('module.'):
-            state_dict[key.replace('module.', '')] = state_dict[key]
-            del state_dict[key]
-    state_dict = OrderedDict(state_dict)
-    model.load_state_dict(state_dict)
+    # PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt"
+    # checkpoint = torch.load(PATH)
+    # from collections import OrderedDict
+    # state_dict = dict(checkpoint['model'])
+    # keys = list(state_dict.keys())
+    # for key in keys:
+    #     if key.startswith('module.'):
+    #         state_dict[key.replace('module.', '')] = state_dict[key]
+    #         del state_dict[key]
+    # state_dict = OrderedDict(state_dict)
+    # model.load_state_dict(state_dict)
     
     if distributed:
         local_rank = env_params["local_rank"]
@@ -127,15 +127,15 @@ def launch(
         f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
     # resume training from last checkpoint if exists
-    # iter_init = load_checkpoint(
-    #     trainer_params["checkpoint_path"],
-    #     model,
-    #     optimizer,
-    #     scheduler,
-    #     logger,
-    #     distributed,
-    #     resume,
-    # )
+    iter_init = load_checkpoint(
+        trainer_params["checkpoint_path"],
+        model,
+        optimizer,
+        scheduler,
+        logger,
+        distributed,
+        resume,
+    )
     # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)
