@@ -4,9 +4,9 @@ import math, random
 import torch
 import torch.nn as nn
 import tree
-from custom_functions_r42 import prepare_forward, prepare_forward_expert_choice ,ensure_comm
-from custom_functions_r42 import MOEScatter, MOEGather
-from custom_functions_r42 import AllGather, Slice
+from custom_functions_r61 import prepare_forward, prepare_forward_expert_choice ,ensure_comm
+from custom_functions_r61 import MOEScatter, MOEGather
+from custom_functions_r61 import AllGather, Slice
 from gates import NaiveGate
 import torch.nn.functional as F
 from fastermoe.config import switch_from_env
@@ -266,9 +266,10 @@ class FMoE(nn.Module):
         self.mask_dict = mask_dict
         self.moe_group = moe_group
         
-        # self.weights = nn.Linear(self.d_model, self.d_model)
-        self.weight_in = nn.Parameter(torch.ones([self.d_model, self.d_model]))
-        self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
+        self.weight_in = nn.Linear(self.d_model, self.d_model)
+        self.weight_out = nn.Linear(self.d_model, self.d_model)
+        # self.weight_in = nn.Parameter(torch.ones([self.d_model, self.d_model]))
+        # self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
 
         # self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
         # self.weights = nn.Linear(self.d_model, 1)
@@ -354,7 +355,8 @@ class FMoE(nn.Module):
         ipdb> moe_inp.shape
         torch.Size([2048, 128])
         """
-        moe_inp = torch.matmul(moe_inp, self.weight_in)
+        # moe_inp = torch.matmul(moe_inp, self.weight_in)
+        moe_inp = self.weight_in(moe_inp)
         # import ipdb; ipdb.set_trace()
         moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
         """
@@ -482,14 +484,10 @@ class FMoE(nn.Module):
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
         # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
         moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
-        # moe_outp = torch.concat([moe_outp_1, moe_outp_2], dim = -1)
+        moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
         # moe_outp = self.weights(moe_outp)
-        # moe_outp = torch.sigmoid(self.weights) * moe_outp_1 + (1 - torch.sigmoid(self.weights)) * moe_outp_2
-        # g1 = torch.sigmoid(torch.matmul(moe_inp, self.weight)).to(moe_outp_1.device)
-        # moe_outp = g1 * moe_outp_1 + (1 - g1) * moe_outp_2
-        moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
-        # moe_outp = self.weights(moe_outp)
-        moe_outp = torch.matmul(moe_outp, self.weight_out)
+        moe_outp = self.weight_out(moe_outp)
+        # moe_outp = torch.matmul(moe_outp, self.weight_out)
         if self.slice_size > 1:
 
             def all_gather_func(tensor):

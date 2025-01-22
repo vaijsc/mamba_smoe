@@ -10,8 +10,8 @@ import time
 
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_r44_mhmoe_mr_T import TransformerSeq
-from trainer_r44_mhmoe_mr_T import train_iteration, full_eval
+from models_r60 import TransformerSeq
+from trainer_r60 import train_iteration, full_eval
 import datetime
 import wandb
 import os
