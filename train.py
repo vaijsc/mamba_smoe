@@ -72,6 +72,18 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
+    PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt"
+    checkpoint = torch.load(PATH)
+    from collections import OrderedDict
+    state_dict = dict(checkpoint['model'])
+    keys = list(state_dict.keys())
+    for key in keys:
+        if key.startswith('module.'):
+            state_dict[key.replace('module.', '')] = state_dict[key]
+            del state_dict[key]
+    state_dict = OrderedDict(state_dict)
+    model.load_state_dict(state_dict)
+    
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)
