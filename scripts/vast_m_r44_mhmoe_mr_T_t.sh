@@ -23,7 +23,7 @@ args="
 --nbatches 1000 \
 --distributed \
 --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r44_mhmoe_mr_T.pt \
---full-eval_mode \
+--full-eval-mode \
 --resume \
 "
 
