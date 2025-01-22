@@ -116,20 +116,21 @@ def launch(
         f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
     # # resume training from last checkpoint if exists
-    # iter_init = load_checkpoint(
-    #     trainer_params["checkpoint_path"],
-    #     model,
-    #     optimizer,
-    #     scheduler,
-    #     logger,
-    #     distributed,
-    #     resume,
-    # )
+    iter_init = load_checkpoint(
+        trainer_params["checkpoint_path"],
+        model,
+        optimizer,
+        scheduler,
+        logger,
+        distributed,
+        resume,
+    )
     # # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)
     # eval model
     if trainer_params["full_eval_mode"]:
+        import ipdb; ipdb.set_trace()
         # evaluate the model on test data
         with torch.no_grad():
             loss_val = full_eval(
