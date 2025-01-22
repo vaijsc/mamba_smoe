@@ -2,7 +2,7 @@ export TORCH_USE_CUDA_DSA=1
 export CUDA_VISIBLE_DEVICES='6,7'
 
 args="
---data /home/anh/wikitext-103  \
+--data /home/datasets/wikitext-103  \
 --base_arch transformer \
 --architecture sgsgsgsgsgsg \
 --gate_name smoe \
