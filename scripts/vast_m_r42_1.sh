@@ -19,7 +19,7 @@ args="
 --lr-warmup 4000 \
 --niter 80 \
 --batch-sz 48 \
---batch-split 2 \
+--batch-split 4 \
 --nbatches 1000 \
 --distributed \
 --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r42_1_linear_attack.pt \
