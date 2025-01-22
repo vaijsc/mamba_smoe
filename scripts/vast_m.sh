@@ -24,7 +24,7 @@ args="
 --distributed \
 --full-eval-mode \
 --resume \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m.pt \
 "
 
 # --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt \
