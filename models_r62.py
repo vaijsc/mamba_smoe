@@ -6,8 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import tqdm
 
-from custom_transformer_mhmoe import FMoETransformerMLP, FMoETransformerMLPOpt
-from custom_gates_mhmoe import *
+from custom_transformer_r62 import FMoETransformerMLP, FMoETransformerMLPOpt
+from custom_gates_r62 import *
 import cmath
 
 
