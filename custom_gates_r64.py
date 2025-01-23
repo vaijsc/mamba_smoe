@@ -56,14 +56,14 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         num_heads = self.h
         
         inp_h = inp.reshape(num_token, num_heads, embed_dim // num_heads).reshape(num_token * num_heads, embed_dim // num_heads) 
-        weight1 = ((self.weight_control(inp_h)) > 0).to(float)
+        p1 = (self.weight_control(inp_h))
+        p2 = 1 - p1 
+        weight1 = (p1 > 0).to(float)
         weight2 = 1 - weight1
         
         non_zero_idx_1 = weight1.sum(dim=-1) != 0  # Rows with non-zero gate_weight1
         non_zero_idx_2 = weight2.sum(dim=-1) != 0  # Rows with non-zero gate_weight2
         
-        p1 = (self.weight_control(inp_h))
-        p2 = 1 - p1 
         P = torch.cat([p1,p2], dim=-1)
         val = F.softmax(P, dim=-1)
         val_tok = val[non_zero_idx_1]
@@ -113,7 +113,8 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         # import ipdb; ipdb.set_trace()
         if self.g_blance:
             self.loss = self.set_load_balance(gate_token_choice, gate_top_k_idx_1)
-            self.loss += 2 * 1 / num_token_choice * val_tok_sum + 2 * 1 / num_token_expert_choice * val_exp_sum
+            if num_token_choice != 0 and num_token_expert_choice != 0:
+                self.loss += 2 * 1 / num_token_choice * val_tok_sum + 2 * 1 / num_token_expert_choice * val_exp_sum
         if return_all_scores:
             return gate_top_k_idx, gate_score_1, gate_score_2, gate
         ### modify
