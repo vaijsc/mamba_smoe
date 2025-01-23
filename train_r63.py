@@ -10,8 +10,8 @@ import time
 
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_r62 import TransformerSeq
-from trainer_r62 import train_iteration, full_eval
+from models_r63 import TransformerSeq
+from trainer_r63 import train_iteration, full_eval
 import datetime
 import wandb
 import os
@@ -72,18 +72,6 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    # import ipdb; ipdb.set_trace()
-    # PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_mhmoe.pt"
-    # checkpoint = torch.load(PATH)
-    # from collections import OrderedDict
-    # state_dict = dict(checkpoint['model'])
-    # keys = list(state_dict.keys())
-    # for key in keys:
-    #     if key.startswith('module.'):
-    #         state_dict[key.replace('module.', '')] = state_dict[key]
-    #         del state_dict[key]
-    # state_dict = OrderedDict(state_dict)
-    # model.load_state_dict(state_dict)
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)

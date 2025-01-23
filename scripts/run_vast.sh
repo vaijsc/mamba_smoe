@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=2,5
+export CUDA_VISIBLE_DEVICES=3,4
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
 args="
@@ -22,13 +22,14 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/r48_t.pt
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/r63_t.pt
 "
 
 #--checkpoint /path/to/checkpoint/directory/smoe.pt \
 #block_sz: shape of input
 echo "Training ..."
-CUDA_VISIBLE_DEVICES='7' python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_mhmoe.py $args #\
+# CUDA_VISIBLE_DEVICES='7' 
+python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_r63.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
 # echo "Evaluation ..."
