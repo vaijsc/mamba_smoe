@@ -268,6 +268,11 @@ class FMoE(nn.Module):
         
         self.weight_in = nn.Linear(self.d_model, self.d_model)
         self.weight_out = nn.Linear(self.d_model, self.d_model)
+        # Xavier initialization
+        nn.init.xavier_uniform_(self.weight_in.weight, gain=1 / math.sqrt(2))
+        nn.init.xavier_uniform_(self.weight_out.weight)
+        nn.init.constant_(self.weight_out.bias, 0.0)
+
         # self.weight_in = nn.Parameter(torch.ones([self.d_model, self.d_model]))
         # self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
 
