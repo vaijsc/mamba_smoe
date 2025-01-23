@@ -268,6 +268,7 @@ class FMoE(nn.Module):
 
         self.weight_in = nn.Linear(self.d_model, self.d_model)
         self.weight_out = nn.Linear(self.d_model, self.d_model)
+        self.h = 2
         # self.weights = nn.Linear(2 * self.d_model, self.d_model)
         # self.weight_in = nn.Parameter(torch.ones([self.d_model, self.d_model]))
         # self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
@@ -351,8 +352,7 @@ class FMoE(nn.Module):
         
         # moe_inp = torch.matmul(moe_inp, self.weight_in)
         moe_inp = self.weight_in(moe_inp)
-        # import ipdb; ipdb.set_trace()
-        moe_inp_1, moe_inp_2, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2 = self.gate(moe_inp)
+        inp_token_choice, inp_expert_choice, gate_top_k_idx_1, gate_score_1, gate_top_k_idx_2, gate_score_2, non_zero_idx_1, non_zero_idx_2 = self.gate(moe_inp)
         """
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
@@ -381,7 +381,7 @@ class FMoE(nn.Module):
             
         # self.current_expert_range = (0, 8)
         fwd_1 = _fmoe_general_global_forward(
-            moe_inp_1,
+            inp_token_choice,
             gate_top_k_idx_1,
             self.expert_fn,
             self.num_expert,
@@ -389,8 +389,8 @@ class FMoE(nn.Module):
             experts=self.experts,
         )
         # self.current_expert_range = (8, 16)
-        fwd_2 = _fmoe_general_global_forward(
-            moe_inp_2,
+        fwd_2 = _fmoe_expert_choice_general_global_forward(
+            inp_expert_choice,
             gate_top_k_idx_2,
             self.expert_fn,
             self.num_expert,
@@ -432,14 +432,14 @@ class FMoE(nn.Module):
                 return tensor
 
             moe_outp_1 = tree.map_structure(view_func, fwd_1)
-            moe_outp_2 = tree.map_structure(view_func, fwd_2)
-            # moe_outp_2 = fwd_2
+            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
+            moe_outp_2 = fwd_2
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
             """
         gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
-        gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
+        # gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
         """
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
@@ -476,9 +476,14 @@ class FMoE(nn.Module):
         
         # import ipdb; ipdb.set_trace()
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
-        moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
-        # moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
-        moe_outp = torch.cat([moe_outp_1, moe_outp_2], dim=-1)
+        num_token_exp_choice, _ = inp_expert_choice.shape
+        moe_outp_2 = tree.map_structure(expert_combine_func, num_token_exp_choice, gate_top_k_idx_2, gate_score_2, moe_outp_2)
+        device = moe_inp.device
+        moe_outp = torch.zeros_like(moe_inp.reshape(num_token, self.h, moe_inp.size(1) // self.h).reshape(num_token* self.h, -1)).to(device)
+        moe_outp[non_zero_idx_1] = moe_outp_1
+        moe_outp[non_zero_idx_2] = moe_outp_2
+        moe_outp = moe_outp.reshape(num_token, moe_outp.size(0) // num_token, moe_outp.size(1)).reshape(num_token, -1)
+
         # moe_outp = torch.matmul(moe_outp, self.weight_out)/
         moe_outp = self.weight_out(moe_outp)
         if self.slice_size > 1:

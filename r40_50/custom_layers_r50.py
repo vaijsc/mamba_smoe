@@ -481,7 +481,7 @@ class FMoE(nn.Module):
         # import ipdb; ipdb.set_trace()
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
         moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
-        device = moe_inp.device
+        device = inp_token_choice.device
         moe_outp = torch.zeros_like(moe_inp).to(device)
         moe_outp[non_zero_idx_1] = moe_outp_1
         moe_outp[non_zero_idx_2] = moe_outp_2
