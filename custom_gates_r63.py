@@ -89,7 +89,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             gate_top_k_val_1 = gate_top_k_val_1.view(-1, self.top_k)  # (BxL) x 1 x top_k
             # gate_top_k_val_2 = gate_top_k_val_2.view(-1, self.top_k)  # (BxL) x 1 x top_k
             # gate_top_k_val_2 = gate_top_k_val_2.view(-1, expert_top_k)  # (BxL) x 1 x top_k
-            device = 
+            # device = 
             if gate_top_k_val_2.numel() == 0:
                 gate_top_k_val_2 = torch.zeros((gate_top_k_val_2.shape[0], expert_top_k), device=device)
             else:
