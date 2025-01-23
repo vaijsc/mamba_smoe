@@ -65,10 +65,11 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         inp_token_choice = inp_h[non_zero_idx_1]
         inp_expert_choice = inp_h[non_zero_idx_2]
         
+        num_token_expert_choice, _ = inp_expert_choice.shape
         gate_token_choice = self.gate(inp_token_choice)
         gate_expert_choice = self.gate(inp_expert_choice)
         
-        expert_top_k = num_token * self.capacity // 16
+        expert_top_k = num_token_expert_choice * self.capacity // 16
         
         if self.dense_moe_flag:
             gate = torch.ones_like(gate)  # average the importance of all experts
