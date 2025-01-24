@@ -32,10 +32,6 @@ echo "Training ..."
 python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_r66.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
-# echo "Evaluation ..."
-# python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train.py $args --resume --full-eval-mode #\ 
-# > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
-
 # 69909127
 # 70708231
 # 70603018 r24
