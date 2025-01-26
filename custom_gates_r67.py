@@ -15,6 +15,34 @@ __all__ = [
     "CustomNaiveGate_Balance_StableMoE",
 ]
 
+def sinkhorn_knopp(B, num_iterations=1000, tol=1e-6, device="cuda"):
+    """
+    Solve the entropy-regularized optimal transport problem using Sinkhorn-Knopp algorithm.
+    
+    Parameters:
+    - B: Cost matrix (T x E) (torch.Tensor)
+    - num_iterations: Number of iterations for scaling factors
+    - tol: Convergence tolerance
+    - device: "cuda" or "cpu"
+    
+    Returns:
+    - A: Optimal transport matrix (T x E) (torch.Tensor)
+    """
+    B = B.to(device)
+    T, E = B.shape
+    K = torch.exp(B)  # Gibbs kernel
+    u = torch.ones(T, device=device)
+    v = torch.ones(E, device=device)
+
+    for _ in range(num_iterations):
+        u_new = 1.0 / (K @ v)  # Ensure row sum constraint
+        v_new = (T/E) / (K.T @ u_new)  # Ensure column sum constraint
+        if torch.norm(u_new - u, p=1) < tol and torch.norm(v_new - v, p=1) < tol:
+            break
+        u, v = u_new, v_new
+    
+    A = torch.diag(u) @ K @ torch.diag(v)
+    return A
 
 class CustomNaiveGate_Balance_SMoE(BaseGate):
     def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=True):
@@ -50,15 +78,14 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         return loss
     
     def forward(self, inp, return_all_scores=False):
-
+        # import ipdb; ipdb.set_trace()
         inp_1 = inp[:, self.d_model // 2 :]
         inp_2 = inp[:, : self.d_model // 2]
 
         gate_1 = self.gate(inp_1)
+## handle inp_2
         gate_2 = self.gate(inp_2)
-
-        num_token, _ = inp.shape
-        expert_top_k = num_token * self.capacity // 16
+        gate_2_sinkhorn = sinkhorn_knopp(gate_2)
         if self.dense_moe_flag:
             gate = torch.ones_like(gate)  # average the importance of all experts
             gate_top_k_val, gate_top_k_idx = torch.topk(
@@ -69,12 +96,15 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             gate_top_k_val_1, gate_top_k_idx_1 = torch.topk(
                 gate_1, k=self.top_k, dim=-1, largest=True, sorted=False
             )  # [.. x top_k] 
-            
+            # import ipdb; ipdb.set_trace()
             gate_top_k_val_2, gate_top_k_idx_2 = torch.topk(
-                torch.transpose(gate_2, 1, 0), k=expert_top_k, dim=-1, largest=True, sorted=False
+                gate_2_sinkhorn, k=self.top_k, dim=-1, largest=True, sorted=False
             )
+            batch_size = gate_top_k_idx_2.shape[0]  # Number of rows
+            # gate_top_k_val_2 = gate_2[gate_top_k_idx_2]
+            gate_top_k_val_2 = gate_2[torch.arange(batch_size, device=gate_2.device).unsqueeze(1), gate_top_k_idx_2]
             gate_top_k_val_1 = gate_top_k_val_1.view(-1, self.top_k)  # (BxL) x 1 x top_k
-            gate_top_k_val_2 = gate_top_k_val_2.view(-1, expert_top_k)  # (BxL) x 1 x top_k
+            gate_top_k_val_2 = gate_top_k_val_2.view(-1, self.top_k)  # (BxL) x 1 x top_k
         """
         ipdb> gate_top_k_val.shape
         torch.Size([2048, 2])

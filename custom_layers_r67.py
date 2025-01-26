@@ -271,14 +271,7 @@ class FMoE(nn.Module):
         # Xavier initialization
         nn.init.xavier_uniform_(self.weight_in.weight, gain=1 / math.sqrt(2))
         nn.init.xavier_uniform_(self.weight_out.weight)
-        nn.init.constant_(self.weight_out.bias, 0.0)
-
-        # self.weight_in = nn.Parameter(torch.ones([self.d_model, self.d_model]))
-        # self.weight_out = nn.Parameter(torch.ones([self.d_model, self.d_model]))
-
-        # self.weight = nn.Parameter(torch.ones([self.d_model, 1]))
-        # self.weights = nn.Linear(self.d_model, 1)
-        
+        nn.init.constant_(self.weight_out.bias, 0.0)        
     def expert_fn(self, inp, fwd_expert_count):
         r"""
         The default expert function which either calls the experts as a whole
@@ -400,7 +393,7 @@ class FMoE(nn.Module):
             experts=self.experts,
         )
         # self.current_expert_range = (8, 16)
-        fwd_2 = _fmoe_expert_choice_general_global_forward(
+        fwd_2 = _fmoe_general_global_forward(
             moe_inp_2,
             gate_top_k_idx_2,
             self.expert_fn,
@@ -443,14 +436,14 @@ class FMoE(nn.Module):
                 return tensor
 
             moe_outp_1 = tree.map_structure(view_func, fwd_1)
-            # moe_outp_2 = tree.map_structure(view_func, fwd_2)
-            moe_outp_2 = fwd_2
+            moe_outp_2 = tree.map_structure(view_func, fwd_2)
+            # moe_outp_2 = fwd_2
             """
             ipdb> fwd.shape
             torch.Size([4096, 128])
             """
         gate_score_1 = gate_score_1.view(-1, 1, self.top_k)
-        # gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
+        gate_score_2 = gate_score_2.view(-1, 1, self.top_k)
         """
         ipdb> gate_score.shape
         torch.Size([2048, 1, 2])
@@ -487,8 +480,8 @@ class FMoE(nn.Module):
         
         # import ipdb; ipdb.set_trace()
         moe_outp_1 = tree.map_structure(bmm_func, gate_score_1, moe_outp_1)
-        # moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
-        moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
+        moe_outp_2 = tree.map_structure(bmm_func, gate_score_2, moe_outp_2)
+        # moe_outp_2 = tree.map_structure(expert_combine_func, num_token, gate_top_k_idx_2, gate_score_2, moe_outp_2)
         moe_outp = torch.cat([moe_outp_2, moe_outp_1], dim=-1)
         # moe_outp = self.weights(moe_outp)
         moe_outp = self.weight_out(moe_outp)
