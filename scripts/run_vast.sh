@@ -22,14 +22,14 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/r65_t.pt
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/r67.pt
 "
 
 #--checkpoint /path/to/checkpoint/directory/smoe.pt \
 #block_sz: shape of input
 echo "Training ..."
 # CUDA_VISIBLE_DEVICES='7' 
-python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_r69.py $args #\
+python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_r67.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
 # 69909127

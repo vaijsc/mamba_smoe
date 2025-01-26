@@ -59,10 +59,15 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         inp_1_norm = F.normalize(inp_1, p=2, dim=-1)  # Normalize inp_2 along last dim
         weight_norm = F.normalize(self.gate.weight, p=2, dim=-1)  # Normalize weight along last dim
         gate_1 = torch.matmul(inp_1_norm, weight_norm.T)  # Compute cosine similarity
+        inp_2_norm = F.normalize(inp_2, p=2, dim=-1)  # Normalize inp_2 along last dim
+        # weight_norm = F.normalize(self.gate.weight, p=2, dim=-1)  # Normalize weight along last dim
+        gate_2 = torch.matmul(inp_2_norm, weight_norm.T)  # Compute cosine similarity
+
         # If there's a bias term in self.gate, you can add it
         if self.gate.bias is not None:
             gate_1 += self.gate.bias
-        gate_2 = self.gate(inp_2)
+            gate_2 += self.gate.bias
+        # gate_2 = self.gate(inp_2)
         num_token, _ = inp.shape
         expert_top_k = num_token * self.capacity // 16
         if self.dense_moe_flag:
