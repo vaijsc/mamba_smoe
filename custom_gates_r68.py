@@ -15,7 +15,7 @@ __all__ = [
     "CustomNaiveGate_Balance_StableMoE",
 ]
 
-def sinkhorn_knopp(B, num_iterations=1000, tol=1e-6, device="cuda"):
+def sinkhorn_knopp(B, num_iterations=100, tol=1e-6, device="cuda"):
     """
     Solve the entropy-regularized optimal transport problem using Sinkhorn-Knopp algorithm.
     
