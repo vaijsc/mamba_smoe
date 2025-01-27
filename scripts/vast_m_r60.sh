@@ -1,5 +1,5 @@
 export TORCH_USE_CUDA_DSA=1
-export CUDA_VISIBLE_DEVICES='4,5'
+export CUDA_VISIBLE_DEVICES='6,7'
 
 args="
 --data /home/datasets/wikitext-103  \
@@ -23,16 +23,16 @@ args="
 --nbatches 1000 \
 --distributed \
 --checkpoint /home/anh/MomentumSMoE/result/checkpoints/smoe_m_r60_p1.pt \
+--wandb-flag \
+--project-name hier_moe \
+--job-name lb_smoe_m_r60_p1 \
 "
-# --wandb-flag \
-# --project-name hier_moe \
-# --job-name lb_smoe_m_r60_p1 \
-# echo "Training ..."
-# WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10023 --nproc_per_node=2 --use_env train_r60.py $args
+
+echo "Training ..."
+WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10023 --nproc_per_node=2 --use_env train_r60.py $args
 
 echo "Evaluation ..."
-# WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
-python -m torch.distributed.launch --master_port 10022 --nproc_per_node=2 --use_env train_r60.py $args --resume --full-eval-mode
+WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" python -m torch.distributed.launch --master_port 10023 --nproc_per_node=2 --use_env train_r60.py $args --resume --full-eval-mode
 
 # đã thử lb 
 # ko thử lb (hiện tại) + xavier initialization
