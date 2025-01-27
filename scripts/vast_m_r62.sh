@@ -1,5 +1,5 @@
 export TORCH_USE_CUDA_DSA=1
-export CUDA_VISIBLE_DEVICES='6,7'
+export CUDA_VISIBLE_DEVICES='4,5'
 
 args="
 --data /home/datasets/wikitext-103  \
