@@ -15,7 +15,7 @@ __all__ = [
     "CustomNaiveGate_Balance_StableMoE",
 ]
 
-def sinkhorn_knopp(B, num_iterations=1000, tol=1e-6, device="cuda"):
+def sinkhorn_knopp(B, num_iterations=100, tol=1e-6, device="cuda"):
     """
     Solve the entropy-regularized optimal transport problem using Sinkhorn-Knopp algorithm.
     
@@ -83,6 +83,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         inp_2 = inp[:, : self.d_model // 2]
 
         gate_1 = self.gate(inp_1)
+        gate_1_sinkhorn = sinkhorn_knopp(gate_1) # r70
 ## handle inp_2
         gate_2 = self.gate(inp_2)
         gate_2_sinkhorn = sinkhorn_knopp(gate_2)
@@ -94,7 +95,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             gate_top_k_val = gate_top_k_val.view(-1, self.tot_expert)
         else:
             gate_top_k_val_1, gate_top_k_idx_1 = torch.topk(
-                gate_1, k=self.top_k, dim=-1, largest=True, sorted=False
+                gate_1_sinkhorn, k=self.top_k, dim=-1, largest=True, sorted=False # r70
             )  # [.. x top_k] 
             # import ipdb; ipdb.set_trace()
             gate_top_k_val_2, gate_top_k_idx_2 = torch.topk(
@@ -102,6 +103,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             )
             batch_size = gate_top_k_idx_2.shape[0]  # Number of rows
             # gate_top_k_val_2 = gate_2[gate_top_k_idx_2]
+            gate_top_k_val_1 = gate_1[torch.arange(batch_size, device=gate_2.device).unsqueeze(1), gate_top_k_idx_1] # r70
             gate_top_k_val_2 = gate_2[torch.arange(batch_size, device=gate_2.device).unsqueeze(1), gate_top_k_idx_2]
             gate_top_k_val_1 = gate_top_k_val_1.view(-1, self.top_k)  # (BxL) x 1 x top_k
             gate_top_k_val_2 = gate_top_k_val_2.view(-1, self.top_k)  # (BxL) x 1 x top_k
