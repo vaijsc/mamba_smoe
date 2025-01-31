@@ -16,6 +16,35 @@ __all__ = [
 ]
 
 
+def sinkhorn_knopp(B, num_iterations=100, tol=1e-2, device="cuda"):
+    """
+    Solve the entropy-regularized optimal transport problem using Sinkhorn-Knopp algorithm.
+    
+    Parameters:
+    - B: Cost matrix (T x E) (torch.Tensor)
+    - num_iterations: Number of iterations for scaling factors
+    - tol: Convergence tolerance
+    - device: "cuda" or "cpu"
+    
+    Returns:
+    - A: Optimal transport matrix (T x E) (torch.Tensor)
+    """
+    B = B.to(device)
+    T, E = B.shape
+    K = torch.exp(B)  # Gibbs kernel
+    u = torch.ones(T, device=device)
+    v = torch.ones(E, device=device)
+
+    for _ in range(num_iterations):
+        u_new = 1.0 / (K @ v)  # Ensure row sum constraint
+        v_new = (T/E) / (K.T @ u_new)  # Ensure column sum constraint
+        if torch.norm(u_new - u, p=1) < tol and torch.norm(v_new - v, p=1) < tol:
+            break
+        u, v = u_new, v_new
+    
+    A = torch.diag(u) @ K @ torch.diag(v)
+    return A
+
 class CustomNaiveGate_Balance_SMoE(BaseGate):
     def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=True):
         super().__init__(num_expert, world_size)
@@ -47,6 +76,7 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
     def forward(self, inp, return_all_scores=False):
         # import ipdb; ipdb.set_trace()
         gate = self.gate(inp)
+        gate_sinkhorn = sinkhorn_knopp(gate) # r73
         """
         ipdb> self.gate(inp).shape
         torch.Size([2048, 16])      
@@ -59,8 +89,10 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
             gate_top_k_val = gate_top_k_val.view(-1, self.tot_expert)
         else:
             gate_top_k_val, gate_top_k_idx = torch.topk(
-                gate, k=self.top_k, dim=-1, largest=True, sorted=False
+                gate_sinkhorn, k=self.top_k, dim=-1, largest=True, sorted=False
             )  # [.. x top_k] 
+            batch_size = gate_top_k_idx.shape[0]  # Number of rows
+            gate_top_k_val = gate[torch.arange(batch_size, device=gate.device).unsqueeze(1), gate_top_k_idx]
             gate_top_k_val = gate_top_k_val.view(-1, self.top_k)  # (BxL) x 1 x top_k
         """
         ipdb> gate_top_k_val.shape
@@ -68,7 +100,6 @@ class CustomNaiveGate_Balance_SMoE(BaseGate):
         ipdb> gate_top_k_idx.shape
         torch.Size([2048, 2])
         """
-        
         gate_score = F.softmax(gate_top_k_val, dim=-1)
         if self.g_blance:
             self.set_load_balance(gate, gate_top_k_idx)
