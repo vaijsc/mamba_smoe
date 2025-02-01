@@ -22,10 +22,10 @@ args="
 --batch-split 2 \
 --nbatches 1000 \
 --distributed \
---checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r73.pt \
+--checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_r73_p1.pt \
 --wandb-flag \
 --project-name hier_moe \
---job-name lb_smoe_m_r73 \
+--job-name lb_smoe_m_r73_p1 \
 "
 
 # --checkpoint /home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m_1.pt \

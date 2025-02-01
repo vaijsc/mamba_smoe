@@ -46,7 +46,7 @@ def sinkhorn_knopp(B, num_iterations=100, tol=1e-2, device="cuda"):
     return A
 
 class CustomNaiveGate_Balance_SMoE(BaseGate):
-    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=True):
+    def __init__(self, d_model, num_expert, world_size, top_k=2, g_blance=False):
         super().__init__(num_expert, world_size)
         self.gate = nn.Linear(d_model, self.tot_expert)
         self.top_k = top_k
