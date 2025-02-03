@@ -10,8 +10,8 @@ import time
 
 from config import PARAMS_CONFIG
 from data import get_train_val_test_data
-from models_r61 import TransformerSeq
-from trainer_r61 import train_iteration, full_eval
+from models_r67 import TransformerSeq
+from trainer_r67 import train_iteration, full_eval
 import datetime
 import wandb
 import os
@@ -94,10 +94,10 @@ def launch(
 
     # create logger
     logger = Logger()
-    folder_path = '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    # folder_path = '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/logging.txt'
     # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
-    # folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
+    folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
     ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]

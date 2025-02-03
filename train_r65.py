@@ -9,9 +9,9 @@ import torch
 import time
 
 from config import PARAMS_CONFIG
-from data_1 import get_train_val_test_data
-from models_r60 import TransformerSeq
-from trainer_r60 import train_iteration, full_eval
+from data import get_train_val_test_data
+from models_r65 import TransformerSeq
+from trainer_r65 import train_iteration, full_eval
 import datetime
 import wandb
 import os

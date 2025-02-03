@@ -9,9 +9,9 @@ import torch
 import time
 
 from config import PARAMS_CONFIG
-from data_1 import get_train_val_test_data
-from models_r60 import TransformerSeq
-from trainer_r60 import train_iteration, full_eval
+from data import get_train_val_test_data
+from models import TransformerSeq
+from trainer import train_iteration, full_eval
 import datetime
 import wandb
 import os
@@ -72,7 +72,18 @@ def launch(
         adapt_span_params=adapt_span_params,
     )
     print(model)
-    # import ipdb; ipdb.set_trace()
+    # PATH = "/home/anh/MomentumSMoE/result/checkpoints/lb_smoe_m.pt"
+    # checkpoint = torch.load(PATH)
+    # from collections import OrderedDict
+    # state_dict = dict(checkpoint['model'])
+    # keys = list(state_dict.keys())
+    # for key in keys:
+    #     if key.startswith('module.'):
+    #         state_dict[key.replace('module.', '')] = state_dict[key]
+    #         del state_dict[key]
+    # state_dict = OrderedDict(state_dict)
+    # model.load_state_dict(state_dict)
+    
     if distributed:
         local_rank = env_params["local_rank"]
         model = model.to(device)
@@ -95,9 +106,9 @@ def launch(
     # create logger
     logger = Logger()
     # folder_path = '/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/logging.txt'
+    folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
     # folder_path = '/home/ubuntu/workspace/MomentumSMoE/result/log'
     # folder_path = '/home/phinh2/phinh2/workspace/MomentumSMoE/result/logging.txt'
-    folder_path = '/home/anh/MomentumSMoE/result/logging.txt'
     logging = create_exp_dir(f"{folder_path}")
     ## import ipdb ipdb.set_trace()
     fold_name = trainer_params["checkpoint_path"].split("/")[-1].split(".")[0]
@@ -115,7 +126,7 @@ def launch(
     logging(
         f"Total of Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
-    # # resume training from last checkpoint if exists
+    # resume training from last checkpoint if exists
     iter_init = load_checkpoint(
         trainer_params["checkpoint_path"],
         model,
@@ -125,7 +136,7 @@ def launch(
         distributed,
         resume,
     )
-    # # fix gate
+    # fix gate
     if model_params["smoe_dropout"]:
         freeze_gate_weight(model)
     # eval model
@@ -278,4 +289,28 @@ def launch(
 
 
 if __name__ == "__main__":
+    # param_config = get_params(params_config=PARAMS_CONFIG)
     launch(**get_params(params_config=PARAMS_CONFIG))
+    # comment = "lb_smoe_m" + "-"
+    
+    # data_name = os.path.basename(param_config["data_params"]["data_path"])
+    # gate_name = param_config["model_params"]["gate_name"]
+    # architecture = param_config["model_params"]["architecture"]
+    # hidden_size = param_config["model_params"]["hidden_size"]
+
+    # name_wandb = comment \
+    #     + f"data_{data_name}" + "-"\
+    #     + f"gate_{gate_name}" + "-"\
+    #     + f"arch_{architecture}" + "-"\
+    #     + f"hidden_{hidden_size}"\
+
+    # wandb.login(key="99a0a70a15a59905811d9ab32443e1a18cad8b1a")
+
+    # if param_config["env_params"]["wandb"] == "False":
+    #     wandb.init(project=f'hier_moe', entity='vinai_batch11', config={}, name=name_wandb, mode="disabled")
+    # else:
+    #     wandb.init(project=f'hier_moe', entity='vinai_batch11', config={}, name=name_wandb, mode="online")
+    # wandb.config.update(param_config)
+    # wandb.save("/home/anh/MomentumSMoE/result/train.py")
+    # launch(**param_config)
+    # wandb.finish()

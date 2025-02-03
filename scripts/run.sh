@@ -35,11 +35,7 @@ args="
 #--checkpoint /path/to/checkpoint/directory/smoe.pt \
 #block_sz: shape of input
 echo "Training ..."
-<<<<<<< HEAD
-CUDA_VISIBLE_DEVICES='7' python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_r39.py $args #\
-=======
-CUDA_VISIBLE_DEVICES='7' python -m torch.distributed.launch --master_port 10012 --nproc_per_node=1 --use_env train_r49.py $args #\
->>>>>>> a71a59aec4e800890f267bb3d9fe999b58998a5b
+CUDA_VISIBLE_DEVICES='7' python -m torch.distributed.launch --master_port 10011 --nproc_per_node=1 --use_env train_r74.py $args #\
 # > >(tee -a /home/ubuntu/workspace/MomentumSMoE/result/smoe_s.txt) 2>&1
 
 # echo "Evaluation ..."
