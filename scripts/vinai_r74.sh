@@ -42,8 +42,8 @@ args="
 --checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r74.pt \
 "
  
-# echo "Training ..."
-# python -m torch.distributed.launch --master_port 10024 --nproc_per_node=2 --use_env train_r74.py $args
+echo "Training ..."
+python -m torch.distributed.launch --master_port 10024 --nproc_per_node=2 --use_env train_r74.py $args
 
 echo "Evaluation ..."
 python -m torch.distributed.launch --master_port 10024 --nproc_per_node=2 --use_env train_r74.py $args --resume --full-eval-mode
