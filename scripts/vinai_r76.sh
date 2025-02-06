@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=r76
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r76_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r76.txt
+#SBATCH --output=/lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/r76_err.txt
+#SBATCH --error=/lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/r76.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --mem-per-gpu=24G
@@ -11,15 +11,15 @@
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
 eval "$(conda shell.bash hook)"
-conda activate /home/anhnd81/.conda/envs/moe
-cd /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE
+conda activate /lustre/scratch/client/movian/research/users/anhnd81/.conda/envs/moe
+cd /lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/
 echo "Current path is $PATH"
 echo "Running"
 # nvidia-smi
 echo $CUDA_VISIBLE_DEVICES
 
 args="
---data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/  \
+--data /lustre/scratch/client/movian/research/users/anhnd81/.cache/wikitext-103 \
 --base_arch transformer \
 --architecture sgsgsgsgsgsg \
 --gate_name smoe \
@@ -39,11 +39,13 @@ args="
 --batch-split 4 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r76.pt \
+--checkpoint /lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r76.pt \
 "
  
 echo "Training ..."
-python -m torch.distributed.launch --master_port 10026 --nproc_per_node=2 --use_env train_r76.py $args
+# WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
+python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r76.py $args
 
 echo "Evaluation ..."
-python -m torch.distributed.launch --master_port 10026 --nproc_per_node=2 --use_env train_r76.py $args --resume --full-eval-mode
+# WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
+python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r76.py $args --resume --full-eval-mode
