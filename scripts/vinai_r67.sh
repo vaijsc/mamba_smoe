@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=r62
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r62_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r62.txt
+#SBATCH --job-name=r67
+#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r67_err.txt
+#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r67.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --mem-per-gpu=24G
@@ -39,13 +39,13 @@ args="
 --batch-split 4 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r62.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r67.pt \
 "
  
 echo "Training ..."
 # WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
-python -m torch.distributed.launch --master_port 10014 --nproc_per_node=2 --use_env train_r62.py $args
+python -m torch.distributed.launch --master_port 10014 --nproc_per_node=2 --use_env train_r67.py $args
 
 echo "Evaluation ..."
 # WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
-python -m torch.distributed.launch --master_port 10014 --nproc_per_node=2 --use_env train_r62.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10014 --nproc_per_node=2 --use_env train_r67.py $args --resume --full-eval-mode
