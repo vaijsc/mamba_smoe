@@ -9,7 +9,7 @@ import torch
 import time
 
 from config import PARAMS_CONFIG
-from data import get_train_val_test_data
+from data_1 import get_train_val_test_data
 from models_r71 import TransformerSeq
 from trainer_r71 import train_iteration, full_eval
 import datetime
