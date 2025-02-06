@@ -36,7 +36,7 @@ args="
 --lr-warmup 4000 \
 --niter 80 \
 --batch-sz 48 \
---batch-split 4 \
+--batch-split 8 \
 --nbatches 1000 \
 --distributed \
 --checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r71.pt \
