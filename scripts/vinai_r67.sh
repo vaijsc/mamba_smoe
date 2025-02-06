@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=r67
-#SBATCH --output=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r67_err.txt
-#SBATCH --error=/lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/r67.txt
+#SBATCH --output=/lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/r67_err.txt
+#SBATCH --error=/lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/r67.txt
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
 #SBATCH --mem-per-gpu=24G
@@ -11,15 +11,15 @@
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
 eval "$(conda shell.bash hook)"
-conda activate /home/anhnd81/.conda/envs/moe
-cd /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE
+conda activate /lustre/scratch/client/movian/research/users/anhnd81/.conda/envs/moe
+cd /lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/
 echo "Current path is $PATH"
 echo "Running"
 # nvidia-smi
 echo $CUDA_VISIBLE_DEVICES
 
 args="
---data /lustre/scratch/client/vinai/users/anhnd81/.cache/wikitext-103/  \
+--data /lustre/scratch/client/movian/research/users/anhnd81/.cache/wikitext-103 \
 --base_arch transformer \
 --architecture sgsgsgsgsgsg \
 --gate_name smoe \
@@ -39,7 +39,7 @@ args="
 --batch-split 4 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r67.pt \
+--checkpoint /lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r67.pt \
 "
  
 echo "Training ..."
