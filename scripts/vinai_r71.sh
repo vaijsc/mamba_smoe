@@ -46,4 +46,4 @@ args="
 # python -m torch.distributed.launch --master_port 10025 --nproc_per_node=2 --use_env train_r71.py $args
 
 echo "Evaluation ..."
-python -m torch.distributed.launch --master_port 10025 --nproc_per_node=2 --use_env train_r71.py $args --resume --full-eval-mode
+python -m torch.distributed.launch --master_port 10025 --nproc_per_node=1 --use_env train_r71.py $args --resume --full-eval-mode
