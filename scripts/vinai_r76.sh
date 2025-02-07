@@ -42,9 +42,9 @@ args="
 --checkpoint /lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r76.pt \
 "
  
-# echo "Training ..."
+echo "Training ..."
 # WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 
-# python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r76.py $args
+python -m torch.distributed.launch --master_port 10016 --nproc_per_node=2 --use_env train_r76.py $args
 
 echo "Evaluation ..."
 # WANDB_API_KEY="99a0a70a15a59905811d9ab32443e1a18cad8b1a" 

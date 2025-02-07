@@ -30,7 +30,7 @@ def sinkhorn_knopp(B, num_iterations=100, tol=1e-2, device="cuda", eps=2):
     """
     B = B.to(device)
     T, E = B.shape
-    K = torch.exp(B /4)  # Gibbs kernel
+    K = torch.exp(B /4 - 1)  # Gibbs kernel
     u = torch.ones(T, device=device)
     v = torch.ones(E, device=device)
 
