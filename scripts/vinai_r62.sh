@@ -39,7 +39,7 @@ args="
 --batch-split 4 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r62.pt \
+--checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r62_1.pt \
 "
  
 echo "Training ..."
