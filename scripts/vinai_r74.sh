@@ -11,7 +11,7 @@
 #SBATCH --mail-user=v.AnhND81@vinai.io
 
 eval "$(conda shell.bash hook)"
-conda activate /home/anhnd81/.conda/envs/moe
+conda activate /lustre/scratch/client/movian/research/users/anhnd81/.conda/envs/moe
 cd /lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE
 echo "Current path is $PATH"
 echo "Running"
@@ -39,11 +39,11 @@ args="
 --batch-split 4 \
 --nbatches 1000 \
 --distributed \
---checkpoint /lustre/scratch/client/vinai/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r74.pt \
+--checkpoint /lustre/scratch/client/movian/research/users/anhnd81/workspace/MomentumSMoE/result/checkpoints/r74_1.pt \
 "
  
-# echo "Training ..."
-# python -m torch.distributed.launch --master_port 10024 --nproc_per_node=2 --use_env train_r74.py $args 
+echo "Training ..."
+python -m torch.distributed.launch --master_port 10024 --nproc_per_node=2 --use_env train_r74.py $args 
 
 echo "Evaluation ..."
 python -m torch.distributed.launch --master_port 10024 --nproc_per_node=2 --use_env train_r74.py $args --resume --full-eval-mode
